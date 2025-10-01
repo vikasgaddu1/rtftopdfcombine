@@ -68,17 +68,18 @@ def close_word_processes():
 # MAIN
 # —————————————————————————————————————————————————————————————————————————
 
-def main(config: GUIConfig = None, progress_callback=None, stop_event=None, parallel_workers=3):
+def main(config: GUIConfig = None, session_state=None, progress_callback=None, stop_event=None, parallel_workers=3):
     """
     Main function to process RTF files and create a combined PDF with TOC.
-    
+
     Args:
         config: GUIConfig object containing all settings
+        session_state: Optional SessionState for ICH/Custom sort modes
         progress_callback: Optional callback function to update progress (0-100)
                          Can be called with (value) or (value, file_progress)
         stop_event: Optional threading.Event object to signal stop request
         parallel_workers: Number of parallel workers for RTF conversion (default 3)
-        
+
     Returns:
         Tuple of (success, conversion_stats) where:
         - success: True if process completed (even with some errors), False if critical failure
@@ -142,31 +143,48 @@ def main(config: GUIConfig = None, progress_callback=None, stop_event=None, para
             return False, conversion_stats
         
         # --- Step 2: Load Section Mapping & Merge with Titles ---
-        if config.use_section_file:
-            logging.info("2. Loading section mapping from Excel file...")
-            section_df = load_filename_section_map(file_section_xlsx)
-            ich_df = load_ich_categories_map(ich_categories_xlsx)
-            
-            # Merge and validate
-            final_df, mismatch_df = merge_and_validate(titles_df, section_df, ich_df)
-            
+        # Check sort mode from config
+        sort_mode = getattr(config, 'sort_mode', 'default')
+
+        if sort_mode in ["ich", "custom"] and session_state:
+            # New ICH/Custom mode using session state
+            logging.info(f"2. Processing files with {sort_mode.upper()} sort mode...")
+            from src.state_converter import session_state_to_dataframe
+
+            final_df = session_state_to_dataframe(session_state, titles_df)
+
             if final_df.empty:
                 logging.error("No valid files remained after section mapping; aborting.")
                 sys.exit(1)
-                
+
+            logging.info(f"   {sort_mode.upper()} mode processing successful.")
+
+        elif config.use_section_file:
+            # Legacy Excel mode (deprecated)
+            logging.info("2. Loading section mapping from Excel file...")
+            section_df = load_filename_section_map(file_section_xlsx)
+            ich_df = load_ich_categories_map(ich_categories_xlsx)
+
+            # Merge and validate
+            final_df, mismatch_df = merge_and_validate(titles_df, section_df, ich_df)
+
+            if final_df.empty:
+                logging.error("No valid files remained after section mapping; aborting.")
+                sys.exit(1)
+
             # Save mismatch report if there were any mismatches
             if not mismatch_df.empty:
                 mismatch_report_path = output_folder / "file_mismatch_report.txt"
                 save_mismatch_report_to_file(mismatch_df, mismatch_report_path)
                 logging.warning(f"   Found {len(mismatch_df)} file mismatches. Report saved to: {mismatch_report_path}")
         else:
+            # Default mode - automatic sections based on prefixes
             logging.info("2. Creating automatic sections based on filename prefixes...")
             final_df = create_automatic_sections(titles_df)
             if final_df.empty:
                 logging.error("No valid files remained after automatic section assignment; aborting.")
                 sys.exit(1)
             logging.info("   Automatic sections created successfully.")
-            # No mismatch report in automatic mode as all input files are used
         if progress_callback:
             progress_callback(4)
         
