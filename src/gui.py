@@ -47,7 +47,13 @@ class RTF2PDFGUI:
         # Set theme colors
         self.bg_color = "#f0f0f0"
         self.accent_color = "#007bff"
+        self.success_color = "#28a745"
+        self.warning_color = "#ffc107"
+        self.danger_color = "#dc3545"
         self.root.configure(bg=self.bg_color)
+
+        # Configure ttk styles
+        self.setup_styles()
 
         # Initialize session state
         self.session_state = SessionState()
@@ -99,18 +105,122 @@ class RTF2PDFGUI:
         # Bind input folder change
         self.input_folder.trace('w', self.on_input_folder_change)
 
+        # Setup keyboard shortcuts
+        self.setup_keyboard_shortcuts()
+
+    def setup_styles(self):
+        """Configure ttk styles for better visual appearance."""
+        style = ttk.Style()
+
+        # Configure button styles
+        style.configure('Accent.TButton',
+                       foreground='white',
+                       background=self.accent_color,
+                       font=('TkDefaultFont', 10, 'bold'),
+                       padding=10)
+
+        style.configure('Success.TButton',
+                       foreground='white',
+                       background=self.success_color,
+                       font=('TkDefaultFont', 10),
+                       padding=8)
+
+        style.configure('Stop.TButton',
+                       foreground='white',
+                       background=self.danger_color,
+                       font=('TkDefaultFont', 10),
+                       padding=8)
+
+        # Configure frame styles
+        style.configure('Card.TFrame', relief='solid', borderwidth=1)
+
+        # Configure label styles
+        style.configure('Title.TLabel', font=('TkDefaultFont', 12, 'bold'))
+        style.configure('Subtitle.TLabel', font=('TkDefaultFont', 10))
+        style.configure('Info.TLabel', font=('TkDefaultFont', 9, 'italic'), foreground='#666')
+
+    def setup_keyboard_shortcuts(self):
+        """Setup keyboard shortcuts for common actions."""
+        # Global shortcuts
+        self.root.bind('<Control-o>', lambda e: self.browse_input())
+        self.root.bind('<Control-s>', lambda e: self.export_config())
+        self.root.bind('<Control-i>', lambda e: self.import_config())
+        self.root.bind('<F5>', lambda e: self.start_processing())
+        self.root.bind('<Escape>', lambda e: self.stop_processing())
+        self.root.bind('<F1>', lambda e: self.show_help())
+        self.root.bind('<F11>', lambda e: self.maximize_window())
+
+    def show_help(self):
+        """Show help dialog with keyboard shortcuts."""
+        help_text = """
+RTF to PDF Converter - Keyboard Shortcuts
+
+Global Shortcuts:
+  Ctrl+O        - Browse Input Folder
+  Ctrl+I        - Import Configuration
+  Ctrl+S        - Export Configuration
+  F5            - Start Processing
+  Escape        - Stop Processing
+  F1            - Show this help
+  F11           - Maximize Window
+
+Sort Modes:
+  Default Sort  - Automatic alphabetical sorting
+  ICH Sort      - Use ICH E3 section structure
+  Custom Sort   - Define your own sections
+
+Configuration Tab:
+  Double-click  - Edit section or file mapping
+  Single-click  - Toggle ignore checkbox (File Mapping)
+  Enter         - Save dialog
+  Escape        - Cancel dialog
+"""
+        messagebox.showinfo("Help - Keyboard Shortcuts", help_text)
+
     def create_menu_bar(self):
         """Create menu bar with window controls."""
         menubar = tk.Menu(self.root)
         self.root.config(menu=menubar)
 
+        # File menu
+        file_menu = tk.Menu(menubar, tearoff=0)
+        menubar.add_cascade(label="File", menu=file_menu)
+        file_menu.add_command(label="Browse Input Folder", command=self.browse_input, accelerator="Ctrl+O")
+        file_menu.add_command(label="Import Config", command=self.import_config, accelerator="Ctrl+I")
+        file_menu.add_command(label="Export Config", command=self.export_config, accelerator="Ctrl+S")
+        file_menu.add_separator()
+        file_menu.add_command(label="Exit", command=self.on_closing)
+
         # Window menu
         window_menu = tk.Menu(menubar, tearoff=0)
         menubar.add_cascade(label="Window", menu=window_menu)
-        window_menu.add_command(label="Maximize", command=self.maximize_window)
+        window_menu.add_command(label="Maximize", command=self.maximize_window, accelerator="F11")
         window_menu.add_command(label="Restore", command=self.restore_window)
-        window_menu.add_separator()
-        window_menu.add_command(label="Exit", command=self.on_closing)
+
+        # Help menu
+        help_menu = tk.Menu(menubar, tearoff=0)
+        menubar.add_cascade(label="Help", menu=help_menu)
+        help_menu.add_command(label="Keyboard Shortcuts", command=self.show_help, accelerator="F1")
+        help_menu.add_separator()
+        help_menu.add_command(label="About", command=self.show_about)
+
+    def show_about(self):
+        """Show about dialog."""
+        about_text = """RTF to PDF Converter with TOC
+
+Version: 2.0
+Integrated Sort Feature
+
+Features:
+• Convert RTF files to PDF
+• Three sort modes: Default, ICH, Custom
+• Interactive section management
+• File mapping with drag-drop support
+• Configuration export/import
+• Real-time validation
+
+© 2024 - Built with Python & Tkinter"""
+        messagebox.showinfo("About", about_text)
 
     def maximize_window(self):
         """Maximize the application window."""
