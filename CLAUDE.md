@@ -16,7 +16,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ### Virtual Environment Setup
 ```bash
-python -m venv venv
+python -m venv .venv
 venv\Scripts\activate  # Windows
 pip install -r requirements.txt
 ```

@@ -28,7 +28,7 @@ This tool converts RTF files to a single PDF document with an automatically gene
 
 ### Running from Source
 ```bash
-python -m venv venv
+python -m venv .venv
 venv\Scripts\activate
 pip install -r requirements.txt
 python run_gui.py

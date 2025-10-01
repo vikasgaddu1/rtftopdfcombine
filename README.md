@@ -98,7 +98,7 @@ This project includes a PowerShell build script that creates standalone executab
 
 1. Ensure you have a virtual environment set up with all dependencies installed:
 ```bash
-python -m venv venv
+python -m venv .venv
 venv\Scripts\activate
 pip install -r requirements.txt
 ```

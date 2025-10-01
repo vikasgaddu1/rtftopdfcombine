@@ -4,10 +4,10 @@ Write-Host "RTF2PDF Build Script" -ForegroundColor Cyan
 Write-Host "========================================" -ForegroundColor Cyan
 
 # Check if virtual environment exists
-if (-not (Test-Path "venv")) {
-    Write-Host "ERROR: Virtual environment 'venv' not found!" -ForegroundColor Red
+if (-not (Test-Path ".venv")) {
+    Write-Host "ERROR: Virtual environment '.venv' not found!" -ForegroundColor Red
     Write-Host "Please create a virtual environment first:" -ForegroundColor Yellow
-    Write-Host "  python -m venv venv" -ForegroundColor White
+    Write-Host "  python -m venv .venv" -ForegroundColor White
     Read-Host "Press Enter to exit"
     exit 1
 }
