@@ -113,6 +113,12 @@ class RTF2PDFGUI:
         style = ttk.Style()
 
         # Configure button styles
+        style.configure('Process.TButton',
+                       foreground='white',
+                       background=self.success_color,
+                       font=('TkDefaultFont', 11, 'bold'),
+                       padding=15)
+
         style.configure('Accent.TButton',
                        foreground='white',
                        background=self.accent_color,
@@ -265,18 +271,6 @@ Features:
                        variable=self.sort_mode, value="custom",
                        command=self.on_sort_mode_change).pack(anchor=tk.W, pady=2)
 
-        # Configuration buttons (shown only for ICH/Custom modes)
-        self.config_buttons_frame = ttk.Frame(sort_frame)
-        self.config_buttons_frame.pack(fill=tk.X, pady=5)
-
-        ttk.Button(self.config_buttons_frame, text="Import Config",
-                  command=self.import_config).pack(side=tk.LEFT, padx=5)
-        ttk.Button(self.config_buttons_frame, text="Export Config",
-                  command=self.export_config).pack(side=tk.LEFT, padx=5)
-
-        # Hide config buttons initially (default mode is selected)
-        self.config_buttons_frame.pack_forget()
-
         # PDF Options
         pdf_frame = ttk.LabelFrame(main_frame, text="PDF Options", padding="5")
         pdf_frame.pack(fill=tk.X, pady=5)
@@ -305,15 +299,15 @@ Features:
 
         self.process_btn = ttk.Button(
             button_frame,
-            text="Process Files",
+            text="▶ Process Files",
             command=self.start_processing,
-            style='Accent.TButton'
+            style='Process.TButton'
         )
         self.process_btn.pack(side=tk.LEFT, padx=5)
 
         self.stop_btn = ttk.Button(
             button_frame,
-            text="Stop",
+            text="⏹ Stop",
             command=self.stop_processing,
             state='disabled',
             style='Stop.TButton'
@@ -362,6 +356,20 @@ Features:
 
     def create_config_tab(self):
         """Create the configuration tab with sub-tabs."""
+        # Configuration buttons at the top (shown only for ICH/Custom modes)
+        self.config_buttons_frame = ttk.Frame(self.config_tab)
+        self.config_buttons_frame.pack(fill=tk.X, padx=10, pady=5)
+
+        ttk.Label(self.config_buttons_frame, text="Configuration:",
+                 font=('TkDefaultFont', 9, 'bold')).pack(side=tk.LEFT, padx=5)
+        ttk.Button(self.config_buttons_frame, text="📥 Import Config",
+                  command=self.import_config).pack(side=tk.LEFT, padx=5)
+        ttk.Button(self.config_buttons_frame, text="📤 Export Config",
+                  command=self.export_config).pack(side=tk.LEFT, padx=5)
+
+        # Hide config buttons initially (default mode is selected)
+        self.config_buttons_frame.pack_forget()
+
         # Create notebook for configuration sub-tabs
         self.config_notebook = ttk.Notebook(self.config_tab)
         self.config_notebook.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
@@ -880,6 +888,9 @@ Features:
             # Load ICH sections if ICH mode selected
             if mode == "ich":
                 self.load_ich_sections()
+
+            # Scan RTF files for both ICH and Custom modes
+            self.scan_rtf_files()
         else:
             self.config_buttons_frame.pack_forget()
 
