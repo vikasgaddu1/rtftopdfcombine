@@ -114,7 +114,7 @@ class RTF2PDFGUI:
 
         # Configure button styles
         style.configure('Process.TButton',
-                       foreground='white',
+                       foreground='black',
                        background=self.success_color,
                        font=('TkDefaultFont', 11, 'bold'),
                        padding=15)
@@ -570,11 +570,17 @@ Features:
 
     def refresh_file_mapping_display(self):
         """Refresh the entire file mapping table."""
+        logging.info(f"[DEBUG] refresh_file_mapping_display() - Starting refresh")
+        logging.info(f"[DEBUG] refresh_file_mapping_display() - Session state has {len(self.session_state.file_mappings)} mappings")
+
         # Clear existing items
-        for item in self.files_tree.get_children():
+        existing_items = self.files_tree.get_children()
+        logging.info(f"[DEBUG] refresh_file_mapping_display() - Clearing {len(existing_items)} existing items")
+        for item in existing_items:
             self.files_tree.delete(item)
 
         # Add files from session state
+        items_added = 0
         for mapping in self.session_state.file_mappings:
             # Get section label
             section_display = "Not Mapped"
@@ -600,16 +606,20 @@ Features:
                 ignore_display,
                 status_text
             ))
+            items_added += 1
 
             # Apply styling
             if mapping.ignore:
                 self.files_tree.item(item, tags=("ignored",))
+
+        logging.info(f"[DEBUG] refresh_file_mapping_display() - Added {items_added} items to tree")
 
         # Configure tag colors
         self.files_tree.tag_configure("ignored", foreground="gray")
 
         # Update summary
         self.update_files_summary()
+        logging.info(f"[DEBUG] refresh_file_mapping_display() - Refresh complete")
 
     def update_files_summary(self):
         """Update the files summary label."""
@@ -879,19 +889,25 @@ Features:
     def on_sort_mode_change(self):
         """Handle sort mode selection change."""
         mode = self.sort_mode.get()
+        logging.info(f"[DEBUG] on_sort_mode_change() - Mode changed to: {mode}")
+
         self.session_state.set_sort_mode(mode)
 
         # Show/hide configuration buttons and tab
         if mode in ["ich", "custom"]:
+            logging.info(f"[DEBUG] on_sort_mode_change() - Showing config buttons")
             self.config_buttons_frame.pack(fill=tk.X, pady=5)
 
             # Load ICH sections if ICH mode selected
             if mode == "ich":
+                logging.info(f"[DEBUG] on_sort_mode_change() - Loading ICH sections")
                 self.load_ich_sections()
 
             # Scan RTF files for both ICH and Custom modes
+            logging.info(f"[DEBUG] on_sort_mode_change() - About to call scan_rtf_files()")
             self.scan_rtf_files()
         else:
+            logging.info(f"[DEBUG] on_sort_mode_change() - Hiding config buttons")
             self.config_buttons_frame.pack_forget()
 
         # Update configuration tab visibility
@@ -927,17 +943,23 @@ Features:
     def scan_rtf_files(self):
         """Scan input folder for RTF files and update session state."""
         input_path = Path(self.input_folder.get())
+        logging.info(f"[DEBUG] scan_rtf_files() - Input path: {input_path}, exists: {input_path.exists()}")
+
         if input_path.exists():
             rtf_files = list(input_path.glob("*.rtf"))
+            logging.info(f"[DEBUG] scan_rtf_files() - Found {len(rtf_files)} RTF files: {[f.name for f in rtf_files]}")
+
             self.session_state.update_rtf_files(rtf_files)
-            logging.info(f"Found {len(rtf_files)} RTF files in input folder")
-            # Update file mapping tab if implemented
-            self.update_file_mapping_display()
+            logging.info(f"[DEBUG] scan_rtf_files() - Session state has {len(self.session_state.file_mappings)} file mappings")
+
+            # Update file mapping tab display
+            self.refresh_file_mapping_display()
+            logging.info(f"[DEBUG] scan_rtf_files() - Called refresh_file_mapping_display()")
 
     def update_file_mapping_display(self):
-        """Update the file mapping display."""
-        # This will be implemented in Phase 3
-        pass
+        """Update the file mapping display (legacy method - calls refresh)."""
+        logging.info(f"[DEBUG] update_file_mapping_display() called - redirecting to refresh_file_mapping_display()")
+        self.refresh_file_mapping_display()
 
     def import_config(self):
         """Import configuration from JSON file."""
