@@ -29,22 +29,11 @@ if errorlevel 1 (
 
 echo.
 echo ========================================
-echo Building GUI version...
+echo Building GUI executable...
 echo ========================================
 pyinstaller --clean build_gui.spec
 if errorlevel 1 (
-    echo ERROR: Failed to build GUI version
-    pause
-    exit /b 1
-)
-
-echo.
-echo ========================================
-echo Building CLI version...
-echo ========================================
-pyinstaller --clean build_cli.spec
-if errorlevel 1 (
-    echo ERROR: Failed to build CLI version
+    echo ERROR: Failed to build GUI executable
     pause
     exit /b 1
 )
@@ -53,10 +42,8 @@ echo.
 echo ========================================
 echo Build completed successfully!
 echo ========================================
-echo GUI executable: dist\RTF2PDF_GUI.exe
-echo CLI executable: dist\RTF2PDF_CLI.exe
+echo Executable: dist\RTF2PDF_GUI.exe
 echo.
-echo Note: Make sure to copy the 'docs' folder alongside
-echo the executable if your application requires it.
+echo Note: The executable is standalone and includes all dependencies.
 echo.
 pause 

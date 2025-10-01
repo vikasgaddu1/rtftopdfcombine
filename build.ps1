@@ -59,7 +59,7 @@ try {
 }
 
 Write-Host "`n========================================" -ForegroundColor Cyan
-Write-Host "Building GUI version..." -ForegroundColor Cyan
+Write-Host "Building GUI executable..." -ForegroundColor Cyan
 Write-Host "========================================" -ForegroundColor Cyan
 try {
     pyinstaller --clean build_gui.spec
@@ -70,25 +70,11 @@ try {
     exit 1
 }
 
-Write-Host "`n========================================" -ForegroundColor Cyan
-Write-Host "Building CLI version..." -ForegroundColor Cyan
-Write-Host "========================================" -ForegroundColor Cyan
-try {
-    pyinstaller --clean build_cli.spec
-    Write-Host "CLI build completed successfully" -ForegroundColor Green
-} catch {
-    Write-Host "ERROR: Failed to build CLI version" -ForegroundColor Red
-    Read-Host "Press Enter to exit"
-    exit 1
-}
-
 Write-Host "`n========================================" -ForegroundColor Green
 Write-Host "Build completed successfully!" -ForegroundColor Green
 Write-Host "========================================" -ForegroundColor Green
-Write-Host "GUI executable: dist\RTF2PDF_GUI.exe" -ForegroundColor White
-Write-Host "CLI executable: dist\RTF2PDF_CLI.exe" -ForegroundColor White
-Write-Host "`nNote: Make sure to copy the 'docs' folder alongside" -ForegroundColor Yellow
-Write-Host "the executable if your application requires it." -ForegroundColor Yellow
+Write-Host "Executable: dist\RTF2PDF_GUI.exe" -ForegroundColor White
+Write-Host "`nNote: The executable is standalone and includes all dependencies." -ForegroundColor Yellow
 
 # Deactivate virtual environment
 Write-Host "`nDeactivating virtual environment..." -ForegroundColor Yellow
