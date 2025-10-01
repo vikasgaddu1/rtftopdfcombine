@@ -275,11 +275,238 @@ class RTF2PDFGUI:
 
     def create_file_mapping_tab(self):
         """Create the file mapping interface."""
-        # This will be implemented in Phase 3
-        label = ttk.Label(self.file_mapping_frame,
-                         text="File Mapping will be implemented in Phase 3",
-                         font=('TkDefaultFont', 12))
-        label.pack(pady=20)
+        # Table frame with scrollbars
+        table_frame = ttk.Frame(self.file_mapping_frame)
+        table_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=5)
+
+        # Create Treeview for file mappings
+        columns = ("filename", "section", "ignore", "status")
+        self.files_tree = ttk.Treeview(table_frame, columns=columns, show="headings", height=15)
+
+        self.files_tree.heading("filename", text="File Name")
+        self.files_tree.heading("section", text="Section Number")
+        self.files_tree.heading("ignore", text="Ignore")
+        self.files_tree.heading("status", text="Status")
+
+        self.files_tree.column("filename", width=200)
+        self.files_tree.column("section", width=300)
+        self.files_tree.column("ignore", width=80)
+        self.files_tree.column("status", width=120)
+
+        # Scrollbars
+        vsb = ttk.Scrollbar(table_frame, orient="vertical", command=self.files_tree.yview)
+        hsb = ttk.Scrollbar(table_frame, orient="horizontal", command=self.files_tree.xview)
+        self.files_tree.configure(yscrollcommand=vsb.set, xscrollcommand=hsb.set)
+
+        # Grid layout
+        self.files_tree.grid(row=0, column=0, sticky="nsew")
+        vsb.grid(row=0, column=1, sticky="ns")
+        hsb.grid(row=1, column=0, sticky="ew")
+
+        table_frame.grid_rowconfigure(0, weight=1)
+        table_frame.grid_columnconfigure(0, weight=1)
+
+        # Bind events
+        self.files_tree.bind("<Double-1>", self.on_file_double_click)
+        self.files_tree.bind("<Button-1>", self.on_file_single_click)
+
+        # Summary frame
+        self.files_summary_frame = ttk.Frame(self.file_mapping_frame)
+        self.files_summary_frame.pack(fill=tk.X, padx=10, pady=5)
+
+        self.files_summary_label = ttk.Label(
+            self.files_summary_frame,
+            text="Files: 0 | Mapped: 0 | Ignored: 0 | Unmapped: 0"
+        )
+        self.files_summary_label.pack(anchor=tk.W)
+
+    def on_file_single_click(self, event):
+        """Handle single click on file mapping table."""
+        region = self.files_tree.identify("region", event.x, event.y)
+        if region == "cell":
+            column = self.files_tree.identify_column(event.x)
+            item = self.files_tree.identify_row(event.y)
+
+            if not item:
+                return
+
+            # If clicked on Ignore column, toggle it
+            if column == "#3":  # Ignore column
+                self.toggle_file_ignore(item)
+
+    def on_file_double_click(self, event):
+        """Handle double-click on file mapping table."""
+        region = self.files_tree.identify("region", event.x, event.y)
+        if region == "cell":
+            column = self.files_tree.identify_column(event.x)
+            item = self.files_tree.identify_row(event.y)
+
+            if not item:
+                return
+
+            # If double-clicked on Section column, show dropdown
+            if column == "#2":  # Section column
+                self.edit_file_section(item, event.x, event.y)
+
+    def toggle_file_ignore(self, item):
+        """Toggle the ignore status for a file."""
+        values = self.files_tree.item(item, "values")
+        filename = values[0]
+
+        # Get the mapping and toggle ignore
+        mapping = self.session_state.get_mapping(filename)
+        if mapping:
+            mapping.ignore = not mapping.ignore
+            logging.info(f"File '{filename}' ignore status: {mapping.ignore}")
+            self.refresh_file_mapping_row(item, mapping)
+            self.update_files_summary()
+
+    def edit_file_section(self, item, x, y):
+        """Show dropdown to edit file section."""
+        # Get item position
+        bbox = self.files_tree.bbox(item, column="#2")
+        if not bbox:
+            return
+
+        values = self.files_tree.item(item, "values")
+        filename = values[0]
+        current_section = values[1]
+
+        # Get the mapping
+        mapping = self.session_state.get_mapping(filename)
+        if not mapping or mapping.ignore:
+            return  # Don't allow editing ignored files
+
+        # Create combobox for section selection
+        section_values = ["Select..."]
+        for section in self.session_state.section_definitions:
+            section_values.append(f"{section.section_number} - {section.section_label}")
+
+        # Create popup combobox
+        combo = ttk.Combobox(self.files_tree, values=section_values, state="readonly")
+
+        # Set current value
+        if current_section and current_section != "Not Mapped":
+            combo.set(current_section)
+        else:
+            combo.set("Select...")
+
+        # Position the combobox
+        combo.place(x=bbox[0], y=bbox[1], width=bbox[2], height=bbox[3])
+        combo.focus()
+
+        def on_select(event):
+            selected = combo.get()
+            if selected and selected != "Select...":
+                # Extract section number
+                section_number = selected.split(" - ")[0]
+                mapping.section_number = section_number
+                logging.info(f"Mapped file '{filename}' to section '{section_number}'")
+                self.refresh_file_mapping_row(item, mapping)
+                self.update_files_summary()
+                self.update_sections_summary()  # Update section stats
+            combo.destroy()
+
+        def on_focusout(event):
+            combo.destroy()
+
+        combo.bind("<<ComboboxSelected>>", on_select)
+        combo.bind("<FocusOut>", on_focusout)
+        combo.bind("<Escape>", lambda e: combo.destroy())
+
+    def refresh_file_mapping_row(self, item, mapping):
+        """Refresh a single row in the file mapping table."""
+        # Get section label
+        section_display = "Not Mapped"
+        if mapping.section_number:
+            section = self.session_state.get_section(mapping.section_number)
+            if section:
+                section_display = f"{section.section_number} - {section.section_label}"
+
+        # Get status with emoji
+        status_text = {
+            "mapped": "✅ Mapped",
+            "unmapped": "⚠️ Not Mapped",
+            "ignored": "🚫 Ignored"
+        }.get(mapping.status, mapping.status)
+
+        # Get ignore display
+        ignore_display = "✓" if mapping.ignore else ""
+
+        # Update row
+        self.files_tree.item(item, values=(
+            mapping.filename,
+            section_display,
+            ignore_display,
+            status_text
+        ))
+
+        # Apply row styling
+        if mapping.ignore:
+            self.files_tree.item(item, tags=("ignored",))
+        else:
+            self.files_tree.item(item, tags=())
+
+        # Configure tag colors
+        self.files_tree.tag_configure("ignored", foreground="gray")
+
+    def refresh_file_mapping_display(self):
+        """Refresh the entire file mapping table."""
+        # Clear existing items
+        for item in self.files_tree.get_children():
+            self.files_tree.delete(item)
+
+        # Add files from session state
+        for mapping in self.session_state.file_mappings:
+            # Get section label
+            section_display = "Not Mapped"
+            if mapping.section_number:
+                section = self.session_state.get_section(mapping.section_number)
+                if section:
+                    section_display = f"{section.section_number} - {section.section_label}"
+
+            # Get status
+            status_text = {
+                "mapped": "✅ Mapped",
+                "unmapped": "⚠️ Not Mapped",
+                "ignored": "🚫 Ignored"
+            }.get(mapping.status, mapping.status)
+
+            # Get ignore display
+            ignore_display = "✓" if mapping.ignore else ""
+
+            # Insert row
+            item = self.files_tree.insert("", tk.END, values=(
+                mapping.filename,
+                section_display,
+                ignore_display,
+                status_text
+            ))
+
+            # Apply styling
+            if mapping.ignore:
+                self.files_tree.item(item, tags=("ignored",))
+
+        # Configure tag colors
+        self.files_tree.tag_configure("ignored", foreground="gray")
+
+        # Update summary
+        self.update_files_summary()
+
+    def update_files_summary(self):
+        """Update the files summary label."""
+        stats = self.session_state.get_statistics()
+        summary_text = (
+            f"Files: {stats['total_files']} | "
+            f"Mapped: {stats['mapped_files']} | "
+            f"Ignored: {stats['ignored_files']} | "
+            f"Unmapped: {stats['unmapped_files']}"
+        )
+        self.files_summary_label.config(text=summary_text)
+
+    def update_file_mapping_display(self):
+        """Update the file mapping display (called from other tabs)."""
+        self.refresh_file_mapping_display()
 
     def create_section_definition_tab(self):
         """Create the section definition interface."""
