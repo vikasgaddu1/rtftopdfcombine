@@ -1,8 +1,8 @@
 {
   "permissions": {
     "allow": [
-      "Bash(git reset:*)",
-      "Bash(git branch:*)"
+      "Bash(git merge:*)",
+      "Bash(git push:*)"
     ],
     "deny": [],
     "ask": []

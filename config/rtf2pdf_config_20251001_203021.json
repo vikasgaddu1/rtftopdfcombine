@@ -1,24 +1,81 @@
 {
   "version": "2.0",
-  "sort_mode": "default",
-  "created_date": "2025-10-02T00:32:24.988502",
+  "sort_mode": "ich",
+  "created_date": "2025-10-02T00:57:22.728036",
   "project_name": "final_document_with_toc",
-  "section_definitions": [],
+  "section_definitions": [
+    {
+      "section_number": "14.1",
+      "section_label": "Demographic Data"
+    },
+    {
+      "section_number": "14.2",
+      "section_label": "Efficacy Data"
+    },
+    {
+      "section_number": "14.3",
+      "section_label": "Safety Data"
+    },
+    {
+      "section_number": "14.3.1",
+      "section_label": "Displays of Adverse Events"
+    },
+    {
+      "section_number": "14.3.2",
+      "section_label": "Listings of Deaths, Other Serious and Significant Adverse Events"
+    },
+    {
+      "section_number": "16.2",
+      "section_label": "Patient Data Listings"
+    },
+    {
+      "section_number": "16.2.1",
+      "section_label": "Discontinued patients"
+    },
+    {
+      "section_number": "16.2.2",
+      "section_label": "Protocol deviations"
+    },
+    {
+      "section_number": "16.2.3",
+      "section_label": "Patients excluded from the efficacy analysis"
+    },
+    {
+      "section_number": "16.2.4",
+      "section_label": "Demographic data"
+    },
+    {
+      "section_number": "16.2.5",
+      "section_label": "Compliance and/or drug concentration data (if available)"
+    },
+    {
+      "section_number": "16.2.6",
+      "section_label": "Individual efficacy response data"
+    },
+    {
+      "section_number": "16.2.7",
+      "section_label": "Adverse event listings (each patient)"
+    },
+    {
+      "section_number": "16.2.8",
+      "section_label": "Listing of individual laboratory measurements by patient"
+    }
+  ],
   "file_mappings": [
     {
       "filename": "fefos01a",
-      "section_number": null,
-      "ignore": true
+      "section_number": "14.2",
+      "ignore": false
     },
     {
       "filename": "lsitfh01",
-      "section_number": null,
+      "section_number": "14.2",
       "ignore": false
     },
     {
       "filename": "tsfae02_p1",
-      "section_number": null,
-      "ignore": true
+      "section_number": "14.1",
+      "ignore": false
     },
     {
       "filename": "tsidm01",
