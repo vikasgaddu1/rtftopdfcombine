@@ -430,7 +430,7 @@ Features:
         # Instructions
         instructions = ttk.Label(
             self.file_mapping_frame,
-            text="💡 Click Section to assign | Type to search | Tab to next file | Click Ignore to toggle",
+            text="💡 Click Section to assign | Type to search | Tab to next file | Click Ignore to toggle | Use filters to search",
             font=('TkDefaultFont', 9, 'italic'),
             foreground='#666'
         )
@@ -438,6 +438,40 @@ Features:
 
         # Track active dropdown to prevent multiple
         self.active_dropdown = None
+
+        # Filter frame
+        filter_frame = ttk.Frame(self.file_mapping_frame)
+        filter_frame.pack(fill=tk.X, padx=10, pady=5)
+
+        # Filter variables
+        self.filter_filename = tk.StringVar()
+        self.filter_section = tk.StringVar()
+        self.filter_status = tk.StringVar()
+
+        # Filter entries with labels
+        ttk.Label(filter_frame, text="Filter:", font=('TkDefaultFont', 9, 'bold')).grid(row=0, column=0, padx=5, pady=2, sticky=tk.W)
+
+        ttk.Label(filter_frame, text="File Name:").grid(row=0, column=1, padx=5, pady=2, sticky=tk.W)
+        filename_filter = ttk.Entry(filter_frame, textvariable=self.filter_filename, width=20)
+        filename_filter.grid(row=0, column=2, padx=5, pady=2, sticky=tk.W)
+
+        ttk.Label(filter_frame, text="Section:").grid(row=0, column=3, padx=5, pady=2, sticky=tk.W)
+        section_filter = ttk.Entry(filter_frame, textvariable=self.filter_section, width=25)
+        section_filter.grid(row=0, column=4, padx=5, pady=2, sticky=tk.W)
+
+        ttk.Label(filter_frame, text="Status:").grid(row=0, column=5, padx=5, pady=2, sticky=tk.W)
+        status_filter = ttk.Combobox(filter_frame, textvariable=self.filter_status, width=15, state='readonly')
+        status_filter['values'] = ["All", "Mapped", "Not Mapped", "Ignored", "Ready"]
+        status_filter.current(0)
+        status_filter.grid(row=0, column=6, padx=5, pady=2, sticky=tk.W)
+
+        # Clear filters button
+        ttk.Button(filter_frame, text="Clear Filters", command=self.clear_file_filters).grid(row=0, column=7, padx=5, pady=2)
+
+        # Bind filter changes to refresh display
+        self.filter_filename.trace('w', lambda *args: self.apply_file_filters())
+        self.filter_section.trace('w', lambda *args: self.apply_file_filters())
+        self.filter_status.trace('w', lambda *args: self.apply_file_filters())
 
         # Table frame with scrollbars
         table_frame = ttk.Frame(self.file_mapping_frame)
@@ -789,26 +823,35 @@ Features:
         # Configure tag colors
         self.files_tree.tag_configure("ignored", foreground="gray")
 
-    def refresh_file_mapping_display(self):
-        """Refresh the entire file mapping table."""
-        # Hide/show section column based on mode
+    def clear_file_filters(self):
+        """Clear all file mapping filters."""
+        self.filter_filename.set("")
+        self.filter_section.set("")
+        self.filter_status.set("All")
+        # apply_file_filters will be called automatically via trace
+
+    def apply_file_filters(self):
+        """Apply filters to the file mapping table."""
+        # Check if filters are initialized yet
+        if not hasattr(self, 'filter_filename'):
+            return
+
+        # Get filter values
+        filename_filter = self.filter_filename.get().lower()
+        section_filter = self.filter_section.get().lower()
+        status_filter = self.filter_status.get()
+
         mode = self.sort_mode.get()
-        if mode == "default":
-            # Hide section column in default mode
-            self.files_tree["displaycolumns"] = ("filename", "ignore", "status")
-        else:
-            # Show all columns in ICH/Custom mode
-            self.files_tree["displaycolumns"] = ("filename", "section", "ignore", "status")
 
         # Clear existing items
         for item in self.files_tree.get_children():
             self.files_tree.delete(item)
 
-        # Debug: Log number of ignored files before display
-        ignored_count = sum(1 for m in self.session_state.file_mappings if m.ignore)
-        logging.info(f"refresh_file_mapping_display: Displaying {len(self.session_state.file_mappings)} files, {ignored_count} are ignored")
+        # Track filtered count
+        filtered_count = 0
+        total_count = len(self.session_state.file_mappings)
 
-        # Add files from session state
+        # Add files from session state that match filters
         for mapping in self.session_state.file_mappings:
             # Get section label
             section_display = "Not Mapped"
@@ -829,12 +872,25 @@ Features:
                     "ignored": "🚫 Ignored"
                 }.get(mapping.status, mapping.status)
 
-            # Get ignore display with more visible checkbox
+            # Apply filters
+            if filename_filter and filename_filter not in mapping.filename.lower():
+                continue
+            if section_filter and section_filter not in section_display.lower():
+                continue
+            if status_filter != "All":
+                # Map status filter to actual status text
+                status_map = {
+                    "Mapped": "✅ Mapped",
+                    "Not Mapped": "⚠️ Not Mapped",
+                    "Ignored": "🚫 Ignored",
+                    "Ready": "📄 Ready"
+                }
+                if status_filter in status_map and status_text != status_map[status_filter]:
+                    continue
+
+            # File passes all filters, add it
+            filtered_count += 1
             ignore_display = "☑" if mapping.ignore else "☐"
-            
-            # Debug log for ignored files
-            if mapping.ignore:
-                logging.debug(f"Displaying file {mapping.filename} with ignore=True, checkbox={ignore_display}")
 
             # Insert row
             item = self.files_tree.insert("", tk.END, values=(
@@ -851,8 +907,41 @@ Features:
         # Configure tag colors
         self.files_tree.tag_configure("ignored", foreground="gray")
 
-        # Update summary
-        self.update_files_summary()
+        # Update summary with filter info
+        self.update_files_summary_with_filter(filtered_count, total_count)
+
+    def update_files_summary_with_filter(self, filtered_count, total_count):
+        """Update the files summary label with filter information."""
+        stats = self.session_state.get_statistics()
+        summary_text = (
+            f"Files: {stats['total_files']} | "
+            f"Mapped: {stats['mapped_files']} | "
+            f"Ignored: {stats['ignored_files']} | "
+            f"Unmapped: {stats['unmapped_files']}"
+        )
+
+        if filtered_count < total_count:
+            summary_text += f" | Showing: {filtered_count} of {total_count}"
+
+        self.files_summary_label.config(text=summary_text)
+
+    def refresh_file_mapping_display(self):
+        """Refresh the entire file mapping table."""
+        # Hide/show section column based on mode
+        mode = self.sort_mode.get()
+        if mode == "default":
+            # Hide section column in default mode
+            self.files_tree["displaycolumns"] = ("filename", "ignore", "status")
+        else:
+            # Show all columns in ICH/Custom mode
+            self.files_tree["displaycolumns"] = ("filename", "section", "ignore", "status")
+
+        # Debug: Log number of ignored files before display
+        ignored_count = sum(1 for m in self.session_state.file_mappings if m.ignore)
+        logging.info(f"refresh_file_mapping_display: Displaying {len(self.session_state.file_mappings)} files, {ignored_count} are ignored")
+
+        # Apply filters instead of showing all
+        self.apply_file_filters()
 
     def update_files_summary(self):
         """Update the files summary label."""
