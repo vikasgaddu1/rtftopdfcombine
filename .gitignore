@@ -122,6 +122,7 @@ output/*.pdf
 output/*.txt
 output/*.json
 output/_pdf/
+*_intermediate.json
 
 # Test/debug scripts
 test_imports.py
