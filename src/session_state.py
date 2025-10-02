@@ -9,6 +9,7 @@ from pathlib import Path
 import json
 import logging
 from datetime import datetime
+from src.pattern_rules import PatternRuleManager
 
 
 @dataclass
@@ -75,6 +76,7 @@ class SessionState:
     section_definitions: List[SectionDefinition] = field(default_factory=list)
     file_mappings: List[FileMapping] = field(default_factory=list)
     rtf_files: List[Path] = field(default_factory=list)
+    pattern_rule_manager: PatternRuleManager = field(default_factory=PatternRuleManager)
 
     def clear(self):
         """Clear all session state."""
@@ -238,18 +240,19 @@ class SessionState:
         }
         return stats
 
-    def export_to_json(self, filepath: Path, project_name: str = "", 
+    def export_to_json(self, filepath: Path, project_name: str = "",
                       additional_settings: Dict[str, Any] = None):
         """Export the session state to a JSON file with optional additional settings."""
         config = {
-            "version": "2.0",  # Bumped version for new format
+            "version": "3.0",  # Bumped version for pattern rules support
             "sort_mode": self.sort_mode,
             "created_date": datetime.now().isoformat(),
             "project_name": project_name,
             "section_definitions": [s.to_dict() for s in self.section_definitions],
-            "file_mappings": [m.to_dict() for m in self.file_mappings]
+            "file_mappings": [m.to_dict() for m in self.file_mappings],
+            "pattern_rules": self.pattern_rule_manager.export_rules()
         }
-        
+
         # Add additional settings if provided
         if additional_settings:
             config["settings"] = additional_settings
@@ -284,6 +287,12 @@ class SessionState:
         # This is CRITICAL - calling update_rtf_files creates the mapping objects
         if preserved_rtf_files:
             self.update_rtf_files(preserved_rtf_files)
+
+        # Load pattern rules (if present)
+        pattern_rules_data = config.get("pattern_rules", [])
+        if pattern_rules_data:
+            self.pattern_rule_manager.import_rules(pattern_rules_data)
+            logging.info(f"Imported {len(pattern_rules_data)} pattern rules")
 
         # Load file mappings
         imported_mappings = []

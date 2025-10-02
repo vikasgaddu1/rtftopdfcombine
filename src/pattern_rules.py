@@ -213,20 +213,20 @@ class PatternRuleManager:
 PATTERN_TEMPLATES = [
     {
         "name": "Files starting with prefix",
-        "pattern": r"^prefix.*",
-        "example": "^fslb.* matches fslb01, fslb02, fslb03a",
+        "pattern": r"^f.*",
+        "example": "Examples: ^f.* (starts with f), ^fslb.* (starts with fslb)",
         "is_regex": True
     },
     {
-        "name": "Files ending with suffix", 
-        "pattern": r".*suffix$",
-        "example": ".*_ae$ matches all files ending with _ae",
+        "name": "Files ending with suffix",
+        "pattern": r".*_ae$",
+        "example": "Examples: .*_ae$ (ends with _ae), .*01$ (ends with 01)",
         "is_regex": True
     },
     {
         "name": "Files containing text",
-        "pattern": r".*text.*",
-        "example": ".*adverse.* matches files containing 'adverse'",
+        "pattern": r".*adverse.*",
+        "example": "Examples: .*adverse.* (contains 'adverse'), .*01.* (contains '01')",
         "is_regex": True
     },
     {
