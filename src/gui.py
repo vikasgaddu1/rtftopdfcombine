@@ -258,7 +258,7 @@ Features:
 
         ttk.Label(input_frame, text="Input Folder:").grid(row=0, column=0, sticky=tk.W, padx=5, pady=5)
         ttk.Entry(input_frame, textvariable=self.input_folder, width=50).grid(row=0, column=1, padx=5, pady=5)
-        ttk.Button(input_frame, text="Browse", command=self.browse_input).grid(row=0, column=2, padx=5, pady=5)
+        ttk.Button(input_frame, text="Browse (Ctrl+O)", command=self.browse_input).grid(row=0, column=2, padx=5, pady=5)
 
         ttk.Label(input_frame, text="Output Folder:").grid(row=1, column=0, sticky=tk.W, padx=5, pady=5)
         ttk.Entry(input_frame, textvariable=self.output_folder, width=50).grid(row=1, column=1, padx=5, pady=5)
@@ -320,7 +320,7 @@ Features:
 
         self.process_btn = ttk.Button(
             button_frame,
-            text="▶ Process Files",
+            text="▶ Process Files (F5)",
             command=self.start_processing,
             style='Process.TButton'
         )
@@ -328,7 +328,7 @@ Features:
 
         self.stop_btn = ttk.Button(
             button_frame,
-            text="⏹ Stop",
+            text="⏹ Stop (Esc)",
             command=self.stop_processing,
             state='disabled',
             style='Stop.TButton'
@@ -383,9 +383,9 @@ Features:
 
         ttk.Label(self.config_buttons_frame, text="Configuration:",
                  font=('TkDefaultFont', 9, 'bold')).pack(side=tk.LEFT, padx=5)
-        ttk.Button(self.config_buttons_frame, text="📥 Import Config",
+        ttk.Button(self.config_buttons_frame, text="📥 Import Config (Ctrl+I)",
                   command=self.import_config).pack(side=tk.LEFT, padx=5)
-        ttk.Button(self.config_buttons_frame, text="📤 Export Config",
+        ttk.Button(self.config_buttons_frame, text="📤 Export Config (Ctrl+S)",
                   command=self.export_config).pack(side=tk.LEFT, padx=5)
 
         # Hide config buttons initially (default mode is selected)
@@ -477,7 +477,8 @@ Features:
         # Clean up any existing dropdown
         if self.active_dropdown:
             try:
-                self.active_dropdown.destroy()
+                if self.active_dropdown.winfo_exists():
+                    self.active_dropdown.destroy()
             except:
                 pass
             self.active_dropdown = None
@@ -490,12 +491,17 @@ Features:
             if not item:
                 return
 
+            # Force focus to the tree to ensure responsiveness
+            self.files_tree.focus_set()
+            
             # Ignore column - toggle
             if column == "#3":
-                self.toggle_file_ignore(item)
+                # Use after to prevent event conflicts
+                self.root.after(1, lambda: self.toggle_file_ignore(item))
             # Section column - open dropdown (SINGLE CLICK!)
             elif column == "#2":
-                self.edit_file_section(item, event.x, event.y)
+                # Use after to ensure UI is ready
+                self.root.after(1, lambda: self.edit_file_section(item, event.x, event.y))
 
     def on_file_enter_key(self, event):
         """Handle Enter key - edit selected row's section."""
@@ -555,7 +561,8 @@ Features:
             self.files_tree,
             values=section_values,
             font=('TkDefaultFont', 10),
-            width=50
+            width=50,
+            state='normal'  # Ensure it's editable for typing
         )
 
         # Set current value
@@ -566,27 +573,66 @@ Features:
 
         # Store all values for filtering
         all_values = section_values.copy()
+        
+        # Track if dropdown is open
+        dropdown_open = False
 
         # Position the combobox (make it wider than the column for better visibility)
         combo.place(x=bbox[0], y=bbox[1], width=min(450, bbox[2] + 150), height=bbox[3])
         combo.focus()
+        combo.focus_set()  # Ensure focus is set
 
-        # Automatically show the dropdown
-        combo.event_generate('<Button-1>')
+        # Open dropdown immediately after placing
+        def open_dropdown():
+            nonlocal dropdown_open
+            try:
+                # Force dropdown to open by simulating a button press
+                combo.event_generate('<Button-1>')
+                combo.event_generate('<ButtonRelease-1>')
+                dropdown_open = True
+            except:
+                pass
+        
+        # Open dropdown after widget is fully placed
+        self.root.after(10, open_dropdown)
 
         def on_keyrelease(event):
             """Filter dropdown as user types."""
+            nonlocal dropdown_open
+            
+            # Don't filter for special keys
+            if event.keysym in ['Up', 'Down', 'Left', 'Right', 'Tab', 'Return', 'Escape']:
+                return
+                
             typed = combo.get().lower()
+            
             if typed == "":
                 combo['values'] = all_values
+                filtered = all_values
             else:
-                # Filter values based on typed text
+                # Filter values based on typed text (search anywhere in the string)
                 filtered = [v for v in all_values if typed in v.lower()]
-                combo['values'] = filtered
-
-            # Keep dropdown open and show filtered results
+                
+            # Update dropdown with filtered values
             if filtered:
-                combo.event_generate('<Down>')
+                combo['values'] = filtered
+            else:
+                # No matches
+                combo['values'] = ["No matches found"]
+                
+            # Always try to keep dropdown open when typing
+            try:
+                # Force dropdown to reopen with new values
+                combo.event_generate('<Button-1>')
+                combo.event_generate('<ButtonRelease-1>')
+                dropdown_open = True
+            except:
+                pass
+                    
+        def on_dropdown_close(event):
+            """Track when dropdown closes."""
+            nonlocal dropdown_open
+            dropdown_open = False
 
         def save_and_close():
             """Save the selection and close dropdown."""
@@ -601,11 +647,28 @@ Features:
                 self.update_sections_summary()
             if self.active_dropdown == combo:
                 self.active_dropdown = None
-            combo.destroy()
+            try:
+                combo.destroy()
+            except:
+                pass
 
         def on_select(event):
             """Handle selection from dropdown."""
+            # Only save if a valid value was selected
+            if combo.get() in all_values:
+                save_and_close()
+
+        def on_return(event):
+            """Handle Enter key."""
+            # If there's a single filtered match, select it
+            current_values = combo['values']
+            typed = combo.get()
+            
+            if typed and current_values and len(current_values) == 1 and current_values[0] != "No matches found":
+                combo.set(current_values[0])
+            
             save_and_close()
+            return "break"
 
         def on_tab(event):
             """Handle Tab key - save and move to next file."""
@@ -617,34 +680,45 @@ Features:
                 self.files_tree.focus(next_item)
                 self.files_tree.see(next_item)
                 # Open dropdown for next item after short delay
-                bbox = self.files_tree.bbox(next_item, column="#2")
-                if bbox:
-                    self.root.after(50, lambda: self.edit_file_section(next_item, bbox[0], bbox[1]))
+                next_bbox = self.files_tree.bbox(next_item, column="#2")
+                if next_bbox:
+                    self.root.after(50, lambda: self.edit_file_section(next_item, next_bbox[0], next_bbox[1]))
             return "break"
 
         def on_escape(event):
             """Handle Escape - cancel without saving."""
             if self.active_dropdown == combo:
                 self.active_dropdown = None
-            combo.destroy()
+            try:
+                combo.destroy()
+            except:
+                pass
             return "break"
 
         def on_focusout(event):
             """Handle focus loss."""
-            # Delay to allow click events to process
-            self.root.after(100, lambda: combo.destroy() if combo.winfo_exists() else None)
-            if self.active_dropdown == combo:
-                self.active_dropdown = None
+            # Check if focus went to dropdown list (which is ok)
+            try:
+                focused = self.root.focus_get()
+                if focused and focused != combo:
+                    # Delay to allow click events to process
+                    self.root.after(200, lambda: combo.destroy() if combo.winfo_exists() else None)
+                    if self.active_dropdown == combo:
+                        self.active_dropdown = None
+            except:
+                pass
 
         # Store as active dropdown
         self.active_dropdown = combo
 
+        # Bind events
         combo.bind("<KeyRelease>", on_keyrelease)
         combo.bind("<<ComboboxSelected>>", on_select)
-        combo.bind("<Return>", on_select)
+        combo.bind("<Return>", on_return)
         combo.bind("<Tab>", on_tab)
         combo.bind("<Escape>", on_escape)
         combo.bind("<FocusOut>", on_focusout)
+        combo.bind("<<ComboboxClosed>>", on_dropdown_close)
 
     def refresh_file_mapping_row(self, item, mapping):
         """Refresh a single row in the file mapping table."""
@@ -705,7 +779,7 @@ Features:
             }.get(mapping.status, mapping.status)
 
             # Get ignore display with clearer checkbox symbols
-            ignore_display = "☑" if mapping.ignore else "☐"
+            ignore_display = "✓" if mapping.ignore else ""
 
             # Insert row
             item = self.files_tree.insert("", tk.END, values=(
