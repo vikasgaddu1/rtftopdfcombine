@@ -1454,7 +1454,7 @@ Features:
     def reset_ui_state(self):
         """Reset UI state when changing sort modes."""
         # Only reset if UI elements exist (not during initialization)
-        if not hasattr(self, 'log_output'):
+        if not hasattr(self, 'log_text'):
             return
 
         # Reset progress bar
@@ -1464,9 +1464,9 @@ Features:
         self.status_var.set("Ready")
 
         # Clear log output
-        self.log_output.configure(state='normal')
-        self.log_output.delete(1.0, tk.END)
-        self.log_output.configure(state='disabled')
+        self.log_text.configure(state='normal')
+        self.log_text.delete(1.0, tk.END)
+        self.log_text.configure(state='disabled')
 
     def update_config_tab_visibility(self):
         """Show/hide configuration tab based on sort mode."""
@@ -1479,15 +1479,25 @@ Features:
         # Show/hide Section Definition tab within Configuration based on mode
         if mode == "default":
             # Default mode: Only show File Mapping tab (hide Section Definition)
-            self.config_notebook.hide(self.section_def_frame)
+            try:
+                tab_index = self.config_notebook.index(self.section_def_frame)
+                # Tab exists and is visible, hide it
+                self.config_notebook.hide(tab_index)
+                logging.debug("Section Definition tab hidden for default mode")
+            except tk.TclError:
+                # Tab is already hidden or doesn't exist
+                pass
         else:
             # ICH/Custom mode: Show both tabs
             # Check if Section Definition tab is hidden, then show it
             try:
-                self.config_notebook.index(self.section_def_frame)
-            except:
+                tab_index = self.config_notebook.index(self.section_def_frame)
+                # Tab exists but might be hidden - this will raise TclError if hidden
+                logging.debug(f"Section Definition tab is visible at index {tab_index}")
+            except tk.TclError:
                 # Tab is hidden, add it back
                 self.config_notebook.add(self.section_def_frame, text="Section Definition")
+                logging.info("Section Definition tab restored for ICH/Custom mode")
 
     def load_ich_sections(self):
         """Load default ICH sections into session state."""
