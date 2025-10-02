@@ -99,6 +99,24 @@ Available in ICH and Custom modes for efficient bulk file assignment:
 
 **Example Use Case:** Map 50 files named `fslb01a` through `fslb25b` to Section 14.3.1 using pattern `^fslb.*` in seconds instead of clicking 50 times.
 
+### Bulk Section Import (v3.0)
+
+Import section definitions in bulk from Excel files instead of manual entry:
+
+- **Excel Import**: Import sections from Excel with required columns `section_number` and `section_label`
+  - Validates file format before import
+  - Preview mode shows what will be imported
+  - Conflict detection with detailed reporting
+  - Option to skip or fail on conflicts
+- **Template Generator**: Download sample Excel template with example data
+- **Error Handling**: Reports invalid rows with specific error messages
+
+**Key Files:**
+- `src/bulk_section_import.py`: Core Excel import logic
+- `src/bulk_import_dialog.py`: UI dialog for import workflow
+
+**Example Use Case:** Import 15 ICH E3 sections from an Excel file in seconds instead of typing each one manually.
+
 ### Important Dependencies
 
 - **Windows-only**: Requires Microsoft Word for RTF conversion
