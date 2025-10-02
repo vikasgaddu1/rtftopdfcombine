@@ -947,6 +947,10 @@ Features:
 
     def reset_ui_state(self):
         """Reset UI state when changing sort modes."""
+        # Only reset if UI elements exist (not during initialization)
+        if not hasattr(self, 'log_output'):
+            return
+
         # Reset progress bar
         self.progress_var.set(0)
 
