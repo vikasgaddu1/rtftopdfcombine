@@ -764,8 +764,8 @@ Features:
                 "ignored": "🚫 Ignored"
             }.get(mapping.status, mapping.status)
 
-        # Get ignore display
-        ignore_display = "✓" if mapping.ignore else ""
+        # Get ignore display with visible checkbox
+        ignore_display = "☑" if mapping.ignore else "☐"
 
         # Update row
         self.files_tree.item(item, values=(
