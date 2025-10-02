@@ -132,10 +132,10 @@ class RTF2PDFGUI:
                        padding=8)
 
         style.configure('Stop.TButton',
-                       foreground='white',
+                       foreground='black',
                        background=self.danger_color,
-                       font=('TkDefaultFont', 10),
-                       padding=8)
+                       font=('TkDefaultFont', 10, 'bold'),
+                       padding=10)
 
         # Configure frame styles
         style.configure('Card.TFrame', relief='solid', borderwidth=1)
