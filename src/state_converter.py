@@ -57,8 +57,7 @@ def session_state_to_dataframe(
             'title': title_row.iloc[0]['title'],
             'filename_stem': mapping.filename,
             'section_number': section.section_number,
-            'section_label': section.section_label,
-            'ICH_section_name': section.section_label  # Same as section_label for compatibility
+            'section_label': section.section_label  # Generic column name for both ICH and Custom modes
         }
 
         final_data.append(row_data)

@@ -64,7 +64,7 @@ The application converts RTF files to PDF and combines them with a table of cont
 2. **Manual Mode**: Uses Excel file (`docs/filename_section.xlsx`) with:
    - `filename`: RTF filename without extension
    - `section_number`: Section identifier
-   - `ICH_section_name`: Section name
+   - `section_label`: Section name (generic, works for both ICH and Custom modes)
 
 ### Important Dependencies
 

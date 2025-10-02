@@ -28,10 +28,21 @@ def load_filename_section_map(xlsx_path: Path) -> pd.DataFrame:
 
 def load_ich_categories_map(xlsx_path: Path) -> pd.DataFrame:
     df = pd.read_excel(xlsx_path, dtype={"section_number": str})
-    for col in ("section_number", "ICH_section_name"):
-        if col not in df.columns:
-            raise KeyError(f"'{col}' not in {xlsx_path.name}")
-    return df[["section_number", "ICH_section_name"]]
+
+    # Support both legacy (ICH_section_name) and new generic (section_label) column names
+    if "section_label" in df.columns:
+        section_col = "section_label"
+    elif "ICH_section_name" in df.columns:
+        section_col = "ICH_section_name"
+        # Rename to generic name for consistency
+        df = df.rename(columns={"ICH_section_name": "section_label"})
+    else:
+        raise KeyError(f"Neither 'section_label' nor 'ICH_section_name' found in {xlsx_path.name}")
+
+    if "section_number" not in df.columns:
+        raise KeyError(f"'section_number' not found in {xlsx_path.name}")
+
+    return df[["section_number", "section_label"]]
 
 
 # —————————————————————————————————————————————————————————————————————————
@@ -69,7 +80,7 @@ def merge_and_validate(
         validate="one_to_one"
     )
 
-    # 2) attach ICH_section_name by section_number
+    # 2) attach section_label by section_number (works for both ICH and Custom modes)
     df = df.merge(
         ich_map,
         on="section_number",
@@ -357,7 +368,7 @@ def create_toc_structure(final_df: pd.DataFrame) -> pd.DataFrame:
 
     Args:
         final_df: DataFrame containing merged and validated data with columns
-                  like 'section_number', 'filename_stem', 'ICH_section_name',
+                  like 'section_number', 'filename_stem', 'section_label',
                   'title', 'filepath'.
 
     Returns:
@@ -376,14 +387,14 @@ def create_toc_structure(final_df: pd.DataFrame) -> pd.DataFrame:
     last_section = None
     for index, row in df_sorted.iterrows():
         current_section = row['section_number']
-        ich_name = row['ICH_section_name']
+        section_label = row['section_label']  # Generic column name for both ICH and Custom modes
         doc_title = row['title'] if pd.notna(row['title']) else row['filename_stem'] # Fallback title
         filepath_val = row['filepath'] # Use the correct column name from final_df
         filename_stem = row['filename_stem']
 
         # If this is the first row of a new section, add the section header
         if current_section != last_section:
-            section_header_text = f"{current_section}  {ich_name}"
+            section_header_text = f"{current_section}  {section_label}"
             toc_rows.append({
                 'level': 1,  # Level 1 for section headers
                 'text': section_header_text,
@@ -428,15 +439,15 @@ def create_automatic_sections(titles_df: pd.DataFrame) -> pd.DataFrame:
         'l': '3.Listings'
     }
     
-    # Add section_number and ICH_section_name columns
+    # Add section_number and section_label columns (generic names for all modes)
     df['section_number'] = None
-    df['ICH_section_name'] = None
-    
+    df['section_label'] = None
+
     # Assign sections based on filename prefix
     for prefix, section in section_mappings.items():
         mask = df['filename_stem'].str.lower().str.startswith(prefix)
         df.loc[mask, 'section_number'] = section.split('.')[0]  # Get the number part
-        df.loc[mask, 'ICH_section_name'] = section.split('.')[1]  # Get the name part
+        df.loc[mask, 'section_label'] = section.split('.')[1]  # Get the name part
     
     # Filter out files that don't match any prefix
     df = df[df['section_number'].notna()]

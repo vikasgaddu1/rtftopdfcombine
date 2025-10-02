@@ -81,7 +81,7 @@ Files are automatically organized based on their filename prefixes:
 Use an Excel file (`filename_section.xlsx`) with the following columns:
 - `filename`: RTF filename (without extension)
 - `section_number`: Section number (e.g., "14.1")
-- `ICH_section_name`: Section name
+- `section_label`: Section name (generic, works for both ICH and Custom modes)
 
 ### Output
 

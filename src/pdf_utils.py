@@ -877,7 +877,7 @@ def prepend_toc_to_pdf(toc_pdf_path: Path, content_pdf_path: Path, final_output_
             for index, row in final_df.iterrows():
                 try:
                     section_number = row['section_number']
-                    section_name = row.get('ICH_section_name', '')
+                    section_name = row.get('section_label', '')  # Generic column name for all modes
                     
                     # Clean section name
                     section_name = clean_text(section_name)
