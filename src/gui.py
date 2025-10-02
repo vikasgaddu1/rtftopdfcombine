@@ -430,11 +430,20 @@ Features:
         # Instructions
         instructions = ttk.Label(
             self.file_mapping_frame,
-            text="💡 Click Section to assign | Type to search | Tab to next file | Click Ignore to toggle | Use filters to search",
+            text="💡 Click Section to assign | Type to search | Tab to next file | Click Ignore to toggle | Regex examples: ^f.* (starts with f), .*01.* (contains 01)",
             font=('TkDefaultFont', 9, 'italic'),
             foreground='#666'
         )
         instructions.pack(fill=tk.X, padx=10, pady=(5, 0))
+
+        # Filter status label (for showing regex errors)
+        self.filter_status_label = ttk.Label(
+            self.file_mapping_frame,
+            text="",
+            font=('TkDefaultFont', 8, 'italic'),
+            foreground='#dc3545'  # Red color for errors
+        )
+        self.filter_status_label.pack(fill=tk.X, padx=10, pady=(0, 5))
 
         # Track active dropdown to prevent multiple
         self.active_dropdown = None
@@ -872,6 +881,8 @@ Features:
         # Compile regex patterns if enabled
         filename_pattern = None
         section_pattern = None
+        regex_error = None
+
         if use_regex:
             import re
             try:
@@ -880,6 +891,7 @@ Features:
                     logging.debug(f"Compiled filename regex: {filename_filter}")
             except re.error as e:
                 logging.warning(f"Invalid filename regex '{filename_filter}': {e}")
+                regex_error = f"Invalid filename regex: {e}"
                 filename_pattern = None
 
             try:
@@ -888,7 +900,20 @@ Features:
                     logging.debug(f"Compiled section regex: {section_filter}")
             except re.error as e:
                 logging.warning(f"Invalid section regex '{section_filter}': {e}")
+                if regex_error:
+                    regex_error += f" | Invalid section regex: {e}"
+                else:
+                    regex_error = f"Invalid section regex: {e}"
                 section_pattern = None
+
+        # Update filter status label
+        if hasattr(self, 'filter_status_label'):
+            if regex_error:
+                self.filter_status_label.config(text=f"⚠ {regex_error}", foreground='#dc3545')
+            elif use_regex and (filename_filter or section_filter):
+                self.filter_status_label.config(text="✓ Using regex patterns", foreground='#28a745')
+            else:
+                self.filter_status_label.config(text="", foreground='#666')
 
         # Add files from session state that match filters
         for mapping in self.session_state.file_mappings:
