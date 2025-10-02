@@ -481,6 +481,11 @@ Features:
         self.filter_section.trace('w', lambda *args: self.apply_file_filters())
         self.filter_status.trace('w', lambda *args: self.apply_file_filters())
 
+        # Initially hide section filter in default mode
+        if self.sort_mode.get() == "default":
+            self.section_filter_label.grid_remove()
+            self.section_filter_entry.grid_remove()
+
         # Table frame with scrollbars
         table_frame = ttk.Frame(self.file_mapping_frame)
         table_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=5)
@@ -852,6 +857,10 @@ Features:
 
         mode = self.sort_mode.get()
 
+        # Debug log filter state
+        if filename_filter or section_filter:
+            logging.debug(f"Applying filters - Filename: '{filename_filter}', Section: '{section_filter}', Regex: {use_regex}")
+
         # Clear existing items
         for item in self.files_tree.get_children():
             self.files_tree.delete(item)
@@ -868,15 +877,17 @@ Features:
             try:
                 if filename_filter:
                     filename_pattern = re.compile(filename_filter, re.IGNORECASE)
+                    logging.debug(f"Compiled filename regex: {filename_filter}")
             except re.error as e:
-                logging.warning(f"Invalid filename regex: {e}")
+                logging.warning(f"Invalid filename regex '{filename_filter}': {e}")
                 filename_pattern = None
 
             try:
                 if section_filter:
                     section_pattern = re.compile(section_filter, re.IGNORECASE)
+                    logging.debug(f"Compiled section regex: {section_filter}")
             except re.error as e:
-                logging.warning(f"Invalid section regex: {e}")
+                logging.warning(f"Invalid section regex '{section_filter}': {e}")
                 section_pattern = None
 
         # Add files from session state that match filters
@@ -904,7 +915,10 @@ Features:
             if filename_filter:
                 if use_regex and filename_pattern:
                     if not filename_pattern.search(mapping.filename):
+                        logging.debug(f"Regex filter excluded: {mapping.filename}")
                         continue
+                    else:
+                        logging.debug(f"Regex filter matched: {mapping.filename}")
                 else:
                     if filename_filter.lower() not in mapping.filename.lower():
                         continue
