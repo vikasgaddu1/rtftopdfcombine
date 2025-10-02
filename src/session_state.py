@@ -232,16 +232,21 @@ class SessionState:
         }
         return stats
 
-    def export_to_json(self, filepath: Path, project_name: str = ""):
-        """Export the session state to a JSON file."""
+    def export_to_json(self, filepath: Path, project_name: str = "", 
+                      additional_settings: Dict[str, Any] = None):
+        """Export the session state to a JSON file with optional additional settings."""
         config = {
-            "version": "1.0",
+            "version": "2.0",  # Bumped version for new format
             "sort_mode": self.sort_mode,
             "created_date": datetime.now().isoformat(),
             "project_name": project_name,
             "section_definitions": [s.to_dict() for s in self.section_definitions],
             "file_mappings": [m.to_dict() for m in self.file_mappings]
         }
+        
+        # Add additional settings if provided
+        if additional_settings:
+            config["settings"] = additional_settings
 
         with open(filepath, 'w', encoding='utf-8') as f:
             json.dump(config, f, indent=2, ensure_ascii=False)
@@ -300,7 +305,8 @@ class SessionState:
             "files_in_config": len(imported_mappings),
             "files_matched": matched_count,
             "files_not_in_config": len(current_filenames) - matched_count,
-            "files_in_config_but_missing": len(imported_mappings) - matched_count
+            "files_in_config_but_missing": len(imported_mappings) - matched_count,
+            "settings": config.get("settings", {})  # Include settings if present
         }
 
         return summary

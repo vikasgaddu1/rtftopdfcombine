@@ -1,13 +1,9 @@
 {
   "version": "1.0",
   "sort_mode": "ich",
-  "created_date": "2025-10-01T20:30:39.205552",
+  "created_date": "2025-10-02T00:20:24.299602",
   "project_name": "final_document_with_toc",
   "section_definitions": [
-    {
-      "section_number": "14",
-      "section_label": "Tables, Figures and Graphs Referred to But Not Included in the Text"
-    },
     {
       "section_number": "14.1",
       "section_label": "Demographic Data"
@@ -68,27 +64,27 @@
   "file_mappings": [
     {
       "filename": "fefos01a",
-      "section_number": "14.1",
-      "ignore": false
+      "section_number": "14.2",
+      "ignore": true
     },
     {
       "filename": "lsitfh01",
-      "section_number": "14.3",
+      "section_number": "14.2",
       "ignore": false
     },
     {
       "filename": "tsfae02_p1",
-      "section_number": "14.3",
-      "ignore": false
+      "section_number": null,
+      "ignore": true
     },
     {
       "filename": "tsidm01",
-      "section_number": "14.3.2",
-      "ignore": false
+      "section_number": null,
+      "ignore": true
     },
     {
       "filename": "tsids01",
-      "section_number": "16.2",
+      "section_number": null,
       "ignore": true
     }
   ]

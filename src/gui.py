@@ -1238,6 +1238,36 @@ Features:
 
                 summary = self.session_state.import_from_json(Path(file_path))
 
+                # Restore settings if they exist in the imported config
+                if 'settings' in summary and summary['settings']:
+                    settings = summary['settings']
+                    
+                    # Restore paths
+                    if 'input_folder' in settings:
+                        self.input_folder.set(settings['input_folder'])
+                    if 'output_folder' in settings:
+                        self.output_folder.set(settings['output_folder'])
+                    if 'output_filename' in settings:
+                        self.output_filename.set(settings['output_filename'])
+                    
+                    # Restore PDF settings
+                    if 'pdf_settings' in settings:
+                        pdf_settings = settings['pdf_settings']
+                        if 'page_width_mm' in pdf_settings:
+                            self.page_width.set(pdf_settings['page_width_mm'])
+                        if 'margin_mm' in pdf_settings:
+                            self.margin.set(pdf_settings['margin_mm'])
+                        if 'font_size' in pdf_settings:
+                            self.font_size.set(pdf_settings['font_size'])
+                        if 'header_font_size' in pdf_settings:
+                            self.header_font_size.set(pdf_settings['header_font_size'])
+                    
+                    # Restore parallel workers
+                    if 'parallel_workers' in settings:
+                        self.parallel_workers.set(settings['parallel_workers'])
+                    
+                    logging.info("Imported configuration includes paths and PDF settings")
+
                 # Show import summary
                 message = f"Configuration Imported\n\n"
                 message += f"Sections loaded: {summary['sections_loaded']}\n"
@@ -1249,7 +1279,10 @@ Features:
                 if summary['files_in_config_but_missing'] > 0:
                     message += f"Files in config but missing: {summary['files_in_config_but_missing']}\n"
 
-                message += "\nReview the Configuration tab to verify mappings."
+                if 'settings' in summary and summary['settings']:
+                    message += "\n✓ Paths and PDF settings restored"
+                
+                message += "\n\nReview the Configuration tab to verify mappings."
 
                 messagebox.showinfo("Import Successful", message)
                 logging.info(f"Configuration imported from: {file_path}")
@@ -1288,10 +1321,30 @@ Features:
             try:
                 # Get project name from output filename
                 project_name = self.output_filename.get().replace(".pdf", "")
+                
+                # Gather all settings to export
+                additional_settings = {
+                    "input_folder": self.input_folder.get(),
+                    "output_folder": self.output_folder.get(),
+                    "output_filename": self.output_filename.get(),
+                    "pdf_settings": {
+                        "page_width_mm": self.page_width.get(),
+                        "margin_mm": self.margin.get(),
+                        "font_size": self.font_size.get(),
+                        "header_font_size": self.header_font_size.get()
+                    },
+                    "parallel_workers": self.parallel_workers.get()
+                }
 
-                self.session_state.export_to_json(Path(file_path), project_name)
-                messagebox.showinfo("Export Successful", f"Configuration exported to:\n{file_path}")
-                logging.info(f"Configuration exported to: {file_path}")
+                self.session_state.export_to_json(Path(file_path), project_name, additional_settings)
+                messagebox.showinfo("Export Successful", 
+                                  f"Configuration exported to:\n{file_path}\n\n"
+                                  f"Includes:\n"
+                                  f"• Paths and filenames\n"
+                                  f"• PDF settings\n"
+                                  f"• Section definitions\n"
+                                  f"• File mappings")
+                logging.info(f"Configuration exported to: {file_path} (with all settings)")
 
             except Exception as e:
                 messagebox.showerror("Export Error", f"Failed to export configuration:\n{str(e)}")
