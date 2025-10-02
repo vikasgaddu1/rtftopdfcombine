@@ -85,6 +85,7 @@ class RTF2PDFGUI:
 
         # Sort mode variable
         self.sort_mode = tk.StringVar(value="default")
+        self.previous_sort_mode = "default"  # Track previous mode for reverting
 
         # PDF settings
         self.page_width = tk.StringVar(value="210")
@@ -97,6 +98,9 @@ class RTF2PDFGUI:
         self.processing_thread = None
         self.stop_event = threading.Event()
         self.is_processing = False
+
+        # Track last save operation
+        self.last_save_successful = False
 
         # Build Main tab
         self.create_main_tab()
@@ -1295,23 +1299,128 @@ Features:
             self.update_file_mapping_display()
             logging.info("Reset sections to ICH defaults")
 
+    def has_configuration_changes(self):
+        """Check if there are unsaved configuration changes."""
+        # If there are any file mappings or section definitions, consider it as having changes
+        if len(self.session_state.section_definitions) > 0:
+            return True
+        if any(m.section_number is not None for m in self.session_state.file_mappings):
+            return True
+        if any(m.ignore for m in self.session_state.file_mappings):
+            return True
+        return False
+
+    def show_sort_mode_change_dialog(self, old_mode, new_mode):
+        """Show dialog asking user what to do with unsaved changes when changing sort mode.
+
+        Returns:
+            'save': User wants to save before switching
+            'switch': User wants to switch without saving
+            'cancel': User wants to cancel the mode change
+        """
+        # Create custom dialog
+        dialog = tk.Toplevel(self.root)
+        dialog.title("Unsaved Configuration")
+        dialog.geometry("500x180")
+        dialog.transient(self.root)
+        dialog.grab_set()
+
+        # Center the dialog
+        dialog.update_idletasks()
+        x = (dialog.winfo_screenwidth() // 2) - (dialog.winfo_width() // 2)
+        y = (dialog.winfo_screenheight() // 2) - (dialog.winfo_height() // 2)
+        dialog.geometry(f"+{x}+{y}")
+
+        result = tk.StringVar(value="cancel")
+
+        # Message
+        mode_names = {"default": "Default", "ich": "ICH", "custom": "Custom"}
+        message = f"You have unsaved configuration changes in {mode_names.get(old_mode, old_mode)} mode.\n\n"
+        message += f"What would you like to do before switching to {mode_names.get(new_mode, new_mode)} mode?"
+
+        ttk.Label(dialog, text=message, wraplength=450, justify=tk.LEFT).pack(pady=20, padx=20)
+
+        # Buttons frame
+        button_frame = ttk.Frame(dialog)
+        button_frame.pack(pady=10, padx=20, fill=tk.X)
+
+        def on_save():
+            result.set("save")
+            dialog.destroy()
+
+        def on_switch():
+            result.set("switch")
+            dialog.destroy()
+
+        def on_cancel():
+            result.set("cancel")
+            dialog.destroy()
+
+        # Create buttons
+        ttk.Button(button_frame, text="💾 Save & Switch", command=on_save,
+                  style='Success.TButton').pack(side=tk.LEFT, padx=5, expand=True, fill=tk.X)
+        ttk.Button(button_frame, text="Switch Without Saving", command=on_switch).pack(side=tk.LEFT, padx=5, expand=True, fill=tk.X)
+        ttk.Button(button_frame, text="Cancel", command=on_cancel).pack(side=tk.LEFT, padx=5, expand=True, fill=tk.X)
+
+        # Bind Escape to cancel
+        dialog.bind("<Escape>", lambda e: on_cancel())
+
+        # Wait for dialog to close
+        dialog.wait_window()
+
+        return result.get()
+
+    def verify_save_completed(self):
+        """Check if the last save operation completed successfully.
+
+        Returns True if save completed, False if user cancelled.
+        """
+        return self.last_save_successful
+
     def on_sort_mode_change(self):
         """Handle sort mode selection change."""
-        mode = self.sort_mode.get()
+        new_mode = self.sort_mode.get()
+        old_mode = self.previous_sort_mode
+
+        # If mode hasn't actually changed, do nothing
+        if new_mode == old_mode:
+            return
+
+        # Check if there are unsaved changes in ICH or Custom modes
+        if old_mode in ["ich", "custom"] and self.has_configuration_changes():
+            # Show warning dialog
+            result = self.show_sort_mode_change_dialog(old_mode, new_mode)
+
+            if result == "save":
+                # Save configuration before switching
+                self.export_config()
+                # After save, check if user actually saved or cancelled
+                # If they cancelled the save dialog, revert to old mode
+                if not self.verify_save_completed():
+                    self.sort_mode.set(old_mode)
+                    return
+            elif result == "cancel":
+                # Revert to previous mode
+                self.sort_mode.set(old_mode)
+                return
+            # If result == "switch", continue without saving
+
+        # Update previous mode tracker
+        self.previous_sort_mode = new_mode
 
         # Reset everything when changing modes
         self.reset_ui_state()
 
-        self.session_state.set_sort_mode(mode)
+        self.session_state.set_sort_mode(new_mode)
 
         # Show/hide configuration buttons and tab
-        if mode in ["ich", "custom"]:
+        if new_mode in ["ich", "custom"]:
             self.config_buttons_frame.pack(fill=tk.X, pady=5)
             # Show hint label for ICH/Custom modes
             self.process_hint_label.pack(pady=(0, 5))
 
             # Load ICH sections if ICH mode selected
-            if mode == "ich":
+            if new_mode == "ich":
                 self.load_ich_sections()
             else:
                 # Custom mode - clear sections for user to define
@@ -1333,7 +1442,7 @@ Features:
         # Update configuration tab visibility
         self.update_config_tab_visibility()
 
-        logging.info(f"Sort mode changed to: {mode}")
+        logging.info(f"Sort mode changed to: {new_mode}")
 
     def reset_ui_state(self):
         """Reset UI state when changing sort modes."""
@@ -1512,6 +1621,9 @@ Features:
         """Export current configuration to JSON file."""
         from datetime import datetime
 
+        # Reset save status
+        self.last_save_successful = False
+
         # Ensure config directory exists
         config_dir = Path.cwd() / "config"
         config_dir.mkdir(exist_ok=True)
@@ -1532,7 +1644,7 @@ Features:
             try:
                 # Get project name from output filename
                 project_name = self.output_filename.get().replace(".pdf", "")
-                
+
                 # Gather all settings to export
                 additional_settings = {
                     "input_folder": self.input_folder.get(),
@@ -1548,7 +1660,8 @@ Features:
                 }
 
                 self.session_state.export_to_json(Path(file_path), project_name, additional_settings)
-                messagebox.showinfo("Export Successful", 
+                self.last_save_successful = True  # Mark save as successful
+                messagebox.showinfo("Export Successful",
                                   f"Configuration exported to:\n{file_path}\n\n"
                                   f"Includes:\n"
                                   f"• Paths and filenames\n"
@@ -1558,8 +1671,12 @@ Features:
                 logging.info(f"Configuration exported to: {file_path} (with all settings)")
 
             except Exception as e:
+                self.last_save_successful = False  # Mark save as failed
                 messagebox.showerror("Export Error", f"Failed to export configuration:\n{str(e)}")
                 logging.error(f"Failed to export configuration: {e}")
+        else:
+            # User cancelled the save dialog
+            self.last_save_successful = False
 
     def setup_logging(self):
         """Configure logging."""
