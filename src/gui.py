@@ -1489,15 +1489,19 @@ Features:
                 pass
         else:
             # ICH/Custom mode: Show both tabs
-            # Check if Section Definition tab is hidden, then show it
+            # The simplest approach: just add the tab back
+            # If it's already visible, this will move it. If hidden, it will show it.
+            # Adding at the end ensures it appears after File Mapping
             try:
-                tab_index = self.config_notebook.index(self.section_def_frame)
-                # Tab exists but might be hidden - this will raise TclError if hidden
-                logging.debug(f"Section Definition tab is visible at index {tab_index}")
-            except tk.TclError:
-                # Tab is hidden, add it back
-                self.config_notebook.add(self.section_def_frame, text="Section Definition")
-                logging.info("Section Definition tab restored for ICH/Custom mode")
+                # Remove it first if it exists (whether visible or hidden)
+                self.config_notebook.forget(self.section_def_frame)
+                logging.debug("Removed existing Section Definition tab")
+            except:
+                pass
+
+            # Now add it back (this will make it visible)
+            self.config_notebook.add(self.section_def_frame, text="Section Definition")
+            logging.info("Section Definition tab shown for ICH/Custom mode")
 
     def load_ich_sections(self):
         """Load default ICH sections into session state."""
