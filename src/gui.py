@@ -1356,9 +1356,10 @@ Features:
             result.set("cancel")
             dialog.destroy()
 
-        # Create buttons
-        ttk.Button(button_frame, text="💾 Save & Switch", command=on_save,
-                  style='Success.TButton').pack(side=tk.LEFT, padx=5, expand=True, fill=tk.X)
+        # Create buttons with better visibility
+        save_btn = ttk.Button(button_frame, text="💾 Save & Switch", command=on_save)
+        save_btn.pack(side=tk.LEFT, padx=5, expand=True, fill=tk.X)
+
         ttk.Button(button_frame, text="Switch Without Saving", command=on_switch).pack(side=tk.LEFT, padx=5, expand=True, fill=tk.X)
         ttk.Button(button_frame, text="Cancel", command=on_cancel).pack(side=tk.LEFT, padx=5, expand=True, fill=tk.X)
 
@@ -1388,22 +1389,28 @@ Features:
 
         # Check if there are unsaved changes in ICH or Custom modes
         if old_mode in ["ich", "custom"] and self.has_configuration_changes():
-            # Show warning dialog
-            result = self.show_sort_mode_change_dialog(old_mode, new_mode)
+            # Show warning dialog in a loop until user makes a valid choice
+            while True:
+                result = self.show_sort_mode_change_dialog(old_mode, new_mode)
 
-            if result == "save":
-                # Save configuration before switching
-                self.export_config()
-                # After save, check if user actually saved or cancelled
-                # If they cancelled the save dialog, revert to old mode
-                if not self.verify_save_completed():
+                if result == "save":
+                    # Save configuration before switching
+                    self.export_config()
+                    # After save, check if user actually saved or cancelled
+                    if self.verify_save_completed():
+                        # Save successful, break out of loop and continue with mode change
+                        break
+                    else:
+                        # User cancelled the save dialog, show warning dialog again
+                        logging.info("User cancelled save dialog, returning to mode change dialog")
+                        continue
+                elif result == "cancel":
+                    # Revert to previous mode
                     self.sort_mode.set(old_mode)
                     return
-            elif result == "cancel":
-                # Revert to previous mode
-                self.sort_mode.set(old_mode)
-                return
-            # If result == "switch", continue without saving
+                else:  # result == "switch"
+                    # Continue without saving
+                    break
 
         # Update previous mode tracker
         self.previous_sort_mode = new_mode
