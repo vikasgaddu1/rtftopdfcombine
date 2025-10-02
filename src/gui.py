@@ -145,6 +145,16 @@ class RTF2PDFGUI:
         style.configure('Subtitle.TLabel', font=('TkDefaultFont', 10))
         style.configure('Info.TLabel', font=('TkDefaultFont', 9, 'italic'), foreground='#666')
 
+        # Configure notebook tab styles for better visibility
+        style.configure('TNotebook.Tab',
+                       font=('TkDefaultFont', 11, 'bold'),
+                       padding=[20, 10])
+
+        # Configure sub-notebook (config tabs) with smaller font
+        style.configure('Config.TNotebook.Tab',
+                       font=('TkDefaultFont', 10),
+                       padding=[15, 8])
+
     def setup_keyboard_shortcuts(self):
         """Setup keyboard shortcuts for common actions."""
         # Global shortcuts
@@ -293,9 +303,20 @@ Features:
         ttk.Label(pdf_frame, text="(Number of RTF files to convert simultaneously)",
                  font=('TkDefaultFont', 8, 'italic')).grid(row=2, column=2, columnspan=2, sticky=tk.W, padx=5)
 
-        # Process buttons
-        button_frame = ttk.Frame(main_frame)
-        button_frame.pack(pady=10)
+        # Process buttons with hint
+        button_container = ttk.Frame(main_frame)
+        button_container.pack(pady=10)
+
+        # Hint label for ICH/Custom modes (hidden initially for default mode)
+        self.process_hint_label = ttk.Label(
+            button_container,
+            text="💡 Configure sections and file mappings in the Configuration tab, then return here to process",
+            style='Info.TLabel'
+        )
+        # Don't pack initially - will be shown when ICH/Custom mode is selected
+
+        button_frame = ttk.Frame(button_container)
+        button_frame.pack()
 
         self.process_btn = ttk.Button(
             button_frame,
@@ -370,8 +391,8 @@ Features:
         # Hide config buttons initially (default mode is selected)
         self.config_buttons_frame.pack_forget()
 
-        # Create notebook for configuration sub-tabs
-        self.config_notebook = ttk.Notebook(self.config_tab)
+        # Create notebook for configuration sub-tabs (with smaller tabs)
+        self.config_notebook = ttk.Notebook(self.config_tab, style='Config.TNotebook')
         self.config_notebook.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
 
         # Create File Mapping tab
@@ -981,6 +1002,8 @@ Features:
         # Show/hide configuration buttons and tab
         if mode in ["ich", "custom"]:
             self.config_buttons_frame.pack(fill=tk.X, pady=5)
+            # Show hint label for ICH/Custom modes
+            self.process_hint_label.pack(pady=(0, 5))
 
             # Load ICH sections if ICH mode selected
             if mode == "ich":
@@ -994,6 +1017,8 @@ Features:
             self.scan_rtf_files()
         else:
             self.config_buttons_frame.pack_forget()
+            # Hide hint label for Default mode
+            self.process_hint_label.pack_forget()
             # Default mode - clear session state
             self.session_state.clear()
 
