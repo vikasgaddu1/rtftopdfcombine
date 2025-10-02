@@ -14,13 +14,14 @@ from src.gui_config import GUIConfig
 
 
 # --- Constants for PDF Layout ---
-PAGE_WIDTH_MM = 210 # A4 width
-MARGIN_MM = 15
+# Landscape orientation provides 40% more width for long titles
+PAGE_WIDTH_MM = 297  # A4 landscape width (was 210 portrait)
+PAGE_HEIGHT_MM = 210  # A4 landscape height (was 297 portrait)
+MARGIN_MM = 12  # Reduced from 15mm for more content width
 CONTENT_WIDTH_MM = PAGE_WIDTH_MM - 2 * MARGIN_MM
-LINE_HEIGHT = 6
-FONT_SIZE = 8
-HEADER_FONT_SIZE = 10
-# PLACEHOLDER_PAGE_NUM = "XX" # No longer needed
+LINE_HEIGHT = 5  # Reduced from 6mm for tighter spacing
+FONT_SIZE = 7  # Reduced from 8pt for more compact layout
+HEADER_FONT_SIZE = 9  # Reduced from 10pt
 FONT = 'Arial'
 
 # --------------------------------
@@ -49,13 +50,14 @@ def generate_toc_pdf(toc_data: pd.DataFrame, page_map: dict[str, int], output_pa
         FONT_SIZE = config.font_size
         HEADER_FONT_SIZE = config.header_font_size
     else:
-        PAGE_WIDTH_MM = 210  # A4 width
-        MARGIN_MM = 15
-        FONT_SIZE = 8
-        HEADER_FONT_SIZE = 10
-    
+        PAGE_WIDTH_MM = 297  # A4 landscape width
+        PAGE_HEIGHT_MM = 210  # A4 landscape height
+        MARGIN_MM = 12
+        FONT_SIZE = 7
+        HEADER_FONT_SIZE = 9
+
     CONTENT_WIDTH_MM = PAGE_WIDTH_MM - 2 * MARGIN_MM
-    LINE_HEIGHT = 6
+    LINE_HEIGHT = 5  # Tighter spacing
     FONT = 'Arial'
     
     logging.info(f"--- Generating Final Table of Contents PDF to {output_path.name} ---")
@@ -94,7 +96,7 @@ def generate_toc_pdf(toc_data: pd.DataFrame, page_map: dict[str, int], output_pa
 
     try:
         # --- First Pass: Calculate TOC page count ---
-        pdf_calc = FPDF(orientation='P', unit='mm', format='A4')
+        pdf_calc = FPDF(orientation='L', unit='mm', format='A4')  # Landscape orientation
         pdf_calc.set_auto_page_break(auto=True, margin=MARGIN_MM)
         pdf_calc.set_margins(left=MARGIN_MM, top=MARGIN_MM, right=MARGIN_MM)
         pdf_calc.add_page()
@@ -115,7 +117,7 @@ def generate_toc_pdf(toc_data: pd.DataFrame, page_map: dict[str, int], output_pa
                 # For calculation pass, estimate space needed for wrapped entries
                 pdf_calc.set_font(FONT, '', FONT_SIZE)
                 pdf_calc.set_text_color(0, 0, 255)
-                indent = "  " * (row['level'] - 1)
+                indent = " " * (row['level'] - 1)  # Single space indentation
                 formatted_text = indent + str(row['text'])
                 
                 # Check if text will fit on one line (leaving space for dots and page number)
@@ -139,7 +141,7 @@ def generate_toc_pdf(toc_data: pd.DataFrame, page_map: dict[str, int], output_pa
         logging.info(f"Calculated TOC will require {toc_page_count} page(s).")
 
         # --- Second Pass: Generate actual TOC PDF without links ---
-        pdf = FPDF(orientation='P', unit='mm', format='A4')
+        pdf = FPDF(orientation='L', unit='mm', format='A4')  # Landscape orientation
         pdf.set_auto_page_break(auto=True, margin=MARGIN_MM)
         pdf.set_margins(left=MARGIN_MM, top=MARGIN_MM, right=MARGIN_MM)
         pdf.add_page()
@@ -192,7 +194,7 @@ def generate_toc_pdf(toc_data: pd.DataFrame, page_map: dict[str, int], output_pa
             elif entry_type == 'entry':
                 pdf.set_font(FONT, '', FONT_SIZE) # Ensure normal font for entries
                 pdf.set_text_color(0, 0, 255)  # Blue color for entries
-                indent = "  " * (level - 1)
+                indent = " " * (level - 1)  # Single space indentation
                 formatted_text = indent + text
 
                 # Get original page number and calculate final page number
