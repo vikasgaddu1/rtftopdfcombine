@@ -100,16 +100,8 @@ def main(config: GUIConfig = None, session_state=None, progress_callback=None, s
     output_folder = config.output_folder
     output_pdf_folder = config.get_output_pdf_folder()
     docs_folder = config.get_docs_folder()
-    
+
     # Set up file paths based on configuration
-    if config.use_section_file:
-        file_section_xlsx = config.section_file_path
-        if not file_section_xlsx or not file_section_xlsx.exists():
-            logging.error(f"Section mapping file not found: {file_section_xlsx}")
-            sys.exit(1)
-    else:
-        file_section_xlsx = None
-        
     ich_categories_xlsx = config.get_ich_categories_path()
     
     # Temporary and Final files
