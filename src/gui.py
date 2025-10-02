@@ -915,6 +915,10 @@ Features:
     def on_sort_mode_change(self):
         """Handle sort mode selection change."""
         mode = self.sort_mode.get()
+
+        # Reset everything when changing modes
+        self.reset_ui_state()
+
         self.session_state.set_sort_mode(mode)
 
         # Show/hide configuration buttons and tab
@@ -924,16 +928,35 @@ Features:
             # Load ICH sections if ICH mode selected
             if mode == "ich":
                 self.load_ich_sections()
+            else:
+                # Custom mode - clear sections for user to define
+                self.session_state.section_definitions.clear()
+                self.refresh_sections_display()
 
             # Scan RTF files for both ICH and Custom modes
             self.scan_rtf_files()
         else:
             self.config_buttons_frame.pack_forget()
+            # Default mode - clear session state
+            self.session_state.clear()
 
         # Update configuration tab visibility
         self.update_config_tab_visibility()
 
         logging.info(f"Sort mode changed to: {mode}")
+
+    def reset_ui_state(self):
+        """Reset UI state when changing sort modes."""
+        # Reset progress bar
+        self.progress_var.set(0)
+
+        # Reset status
+        self.status_var.set("Ready")
+
+        # Clear log output
+        self.log_output.configure(state='normal')
+        self.log_output.delete(1.0, tk.END)
+        self.log_output.configure(state='disabled')
 
     def update_config_tab_visibility(self):
         """Show/hide configuration tab based on sort mode."""
