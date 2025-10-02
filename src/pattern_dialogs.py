@@ -21,7 +21,8 @@ class PatternQuickDialog:
         # Create top-level window
         self.dialog = tk.Toplevel(parent)
         self.dialog.title("Quick Pattern Assignment")
-        self.dialog.geometry("700x600")
+        self.dialog.geometry("750x700")  # Increased size for better button visibility
+        self.dialog.minsize(700, 650)    # Set minimum size
         self.dialog.transient(parent)
         self.dialog.grab_set()
 
@@ -531,7 +532,8 @@ class PatternRuleEditDialog:
         # Create top-level window
         self.dialog = tk.Toplevel(parent)
         self.dialog.title("Edit Pattern Rule" if rule else "Add Pattern Rule")
-        self.dialog.geometry("600x500")
+        self.dialog.geometry("650x600")  # Increased size for better visibility
+        self.dialog.minsize(600, 550)    # Set minimum size
         self.dialog.transient(parent)
         self.dialog.grab_set()
 
