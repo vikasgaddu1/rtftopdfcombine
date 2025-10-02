@@ -535,6 +535,19 @@ Features:
         self.files_tree.bind("<Return>", self.on_file_enter_key)
         self.files_tree.bind("<space>", self.on_file_space_key)
 
+        # Toolbar for batch operations
+        toolbar_frame = ttk.Frame(self.file_mapping_frame)
+        toolbar_frame.pack(fill=tk.X, padx=10, pady=5)
+
+        ttk.Label(toolbar_frame, text="Batch Operations:", font=('TkDefaultFont', 9, 'bold')).pack(side=tk.LEFT, padx=(0, 10))
+
+        ttk.Button(toolbar_frame, text="⚡ Quick Pattern",
+                  command=self.open_quick_pattern_dialog).pack(side=tk.LEFT, padx=(0, 5))
+        ttk.Button(toolbar_frame, text="📋 Manage Rules",
+                  command=self.open_pattern_rules_dialog).pack(side=tk.LEFT, padx=(0, 5))
+        ttk.Button(toolbar_frame, text="▶ Apply All Rules",
+                  command=self.apply_all_pattern_rules).pack(side=tk.LEFT, padx=(0, 5))
+
         # Summary frame
         self.files_summary_frame = ttk.Frame(self.file_mapping_frame)
         self.files_summary_frame.pack(fill=tk.X, padx=10, pady=5)
@@ -2159,6 +2172,132 @@ Features:
             gc.collect()
         except Exception as e:
             logging.debug(f"Cleanup error (non-critical): {e}")
+
+    def open_quick_pattern_dialog(self):
+        """Open the quick pattern assignment dialog."""
+        # Check if we're in a mode that supports pattern rules
+        if self.sort_mode.get() == "default":
+            messagebox.showinfo(
+                "Pattern Rules Not Available",
+                "Pattern rules are only available in ICH or Custom sort modes.\n\n"
+                "Please switch to ICH or Custom mode in the Main tab.",
+                parent=self.root
+            )
+            return
+
+        # Check if sections are defined
+        if not self.session_state.section_definitions:
+            messagebox.showwarning(
+                "No Sections Defined",
+                "Please define sections in the Section Definition tab first.",
+                parent=self.root
+            )
+            return
+
+        # Get selected files
+        selected_items = self.files_tree.selection()
+        selected_files = []
+        for item in selected_items:
+            values = self.files_tree.item(item, 'values')
+            if values:
+                selected_files.append(values[0])  # filename is first column
+
+        # Import and show dialog
+        from src.pattern_dialogs import PatternQuickDialog
+        dialog = PatternQuickDialog(self.root, self.session_state, selected_files)
+        result = dialog.show()
+
+        if result:
+            # Refresh the file mapping display
+            self.refresh_file_mapping_display()
+            messagebox.showinfo(
+                "Pattern Applied",
+                f"Applied section {result['section_number']} to {len(result['matches'])} file(s)." +
+                ("\nRule saved for future use." if result['saved_as_rule'] else ""),
+                parent=self.root
+            )
+
+    def open_pattern_rules_dialog(self):
+        """Open the pattern rules management dialog."""
+        # Check if we're in a mode that supports pattern rules
+        if self.sort_mode.get() == "default":
+            messagebox.showinfo(
+                "Pattern Rules Not Available",
+                "Pattern rules are only available in ICH or Custom sort modes.\n\n"
+                "Please switch to ICH or Custom mode in the Main tab.",
+                parent=self.root
+            )
+            return
+
+        # Check if sections are defined
+        if not self.session_state.section_definitions:
+            messagebox.showwarning(
+                "No Sections Defined",
+                "Please define sections in the Section Definition tab first.",
+                parent=self.root
+            )
+            return
+
+        # Import and show dialog
+        from src.pattern_dialogs import PatternRulesDialog
+        dialog = PatternRulesDialog(self.root, self.session_state)
+        dialog.show()
+
+        # Refresh the file mapping display in case rules were applied
+        self.refresh_file_mapping_display()
+
+    def apply_all_pattern_rules(self):
+        """Apply all active pattern rules to file mappings."""
+        # Check if we're in a mode that supports pattern rules
+        if self.sort_mode.get() == "default":
+            messagebox.showinfo(
+                "Pattern Rules Not Available",
+                "Pattern rules are only available in ICH or Custom sort modes.\n\n"
+                "Please switch to ICH or Custom mode in the Main tab.",
+                parent=self.root
+            )
+            return
+
+        if not self.session_state.pattern_rule_manager.rules:
+            messagebox.showinfo(
+                "No Rules Defined",
+                "No pattern rules have been defined yet.\n\n"
+                "Use '⚡ Quick Pattern' or '📋 Manage Rules' to create pattern rules.",
+                parent=self.root
+            )
+            return
+
+        # Ask if should override existing mappings
+        override = messagebox.askyesnocancel(
+            "Apply Pattern Rules",
+            "Override existing section assignments?\n\n"
+            "Yes = Override all assignments\n"
+            "No = Only unmapped files\n"
+            "Cancel = Don't apply",
+            parent=self.root
+        )
+
+        if override is None:
+            return
+
+        # Apply rules
+        stats = self.session_state.pattern_rule_manager.apply_rules_to_mappings(
+            self.session_state.file_mappings,
+            override_existing=override
+        )
+
+        # Refresh display
+        self.refresh_file_mapping_display()
+
+        # Show results
+        messagebox.showinfo(
+            "Pattern Rules Applied",
+            f"Pattern rules have been applied:\n\n"
+            f"  • Applied: {stats['applied']} files\n"
+            f"  • Skipped: {stats['skipped']} files\n"
+            f"  • Failed: {stats['failed']} files",
+            parent=self.root
+        )
 
     def on_closing(self):
         """Handle window closing."""
