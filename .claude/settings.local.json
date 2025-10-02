@@ -2,7 +2,9 @@
   "permissions": {
     "allow": [
       "Bash(git merge:*)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(git commit:*)",
+      "Bash(powershell.exe:*)"
     ],
     "deny": [],
     "ask": []
