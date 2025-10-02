@@ -313,13 +313,13 @@ DEFAULT_ICH_SECTIONS = [
 ]
 
 # Header-only sections (not assignable to files)
-HEADER_ONLY_SECTIONS = ["14", "16.2"]
+HEADER_ONLY_SECTIONS = ["14"]
 
 
 def load_default_ich_sections() -> List[SectionDefinition]:
     """
     Load the default ICH E3 sections.
-    Excludes header-only sections that cannot be assigned to files.
+    Excludes header-only section "14" which is used only as the main TOC header.
     """
     sections = []
     for number, label in DEFAULT_ICH_SECTIONS:
