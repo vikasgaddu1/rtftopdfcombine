@@ -70,9 +70,9 @@ class RTF2PDFGUI:
         self.config_tab = ttk.Frame(self.notebook)
         self.notebook.add(self.config_tab, text="Configuration")
 
-        # Variables for main tab
-        self.input_folder = tk.StringVar(value=str(Path.cwd() / "input"))
-        self.output_folder = tk.StringVar(value=str(Path.cwd() / "output"))
+        # Variables for main tab - start empty for production use
+        self.input_folder = tk.StringVar(value="")
+        self.output_folder = tk.StringVar(value="")
         self.output_filename = tk.StringVar(value="final_document_with_toc.pdf")
 
         # Sort mode variable
@@ -1175,9 +1175,13 @@ Features:
 
     def on_input_folder_change(self, *args):
         """Handle input folder change."""
-        # Scan RTF files for all modes (default, ich, custom)
-        # Default mode needs files for ignore functionality
-        self.scan_rtf_files()
+        # Only scan if there's a valid folder path
+        # Prevents scanning on initialization when folder is empty
+        folder_path = self.input_folder.get().strip()
+        if folder_path and Path(folder_path).exists():
+            # Scan RTF files for all modes (default, ich, custom)
+            # Default mode needs files for ignore functionality
+            self.scan_rtf_files()
 
     def scan_rtf_files(self):
         """Scan input folder for RTF files and update session state."""
@@ -1336,6 +1340,60 @@ Features:
 
         return True
 
+    def lock_ui(self):
+        """Lock UI controls during processing to prevent changes."""
+        # Disable input/output controls
+        for widget in self.root.winfo_children():
+            self._disable_widget_recursive(widget)
+
+        # Keep stop button enabled
+        self.stop_btn.configure(state='normal')
+
+    def unlock_ui(self):
+        """Unlock UI controls after processing."""
+        for widget in self.root.winfo_children():
+            self._enable_widget_recursive(widget)
+
+        # Reset button states
+        self.process_btn.configure(state='normal')
+        self.stop_btn.configure(state='disabled')
+
+    def _disable_widget_recursive(self, widget):
+        """Recursively disable widgets."""
+        try:
+            # Skip certain widgets
+            if widget == self.stop_btn or widget == self.log_output:
+                return
+
+            widget_type = widget.winfo_class()
+            if widget_type in ('TButton', 'TEntry', 'TCombobox', 'TSpinbox', 'TRadiobutton', 'TCheckbutton'):
+                widget.configure(state='disabled')
+            elif widget_type == 'TNotebook':
+                # Disable tab switching
+                for tab_id in range(widget.index('end')):
+                    widget.tab(tab_id, state='disabled')
+
+            for child in widget.winfo_children():
+                self._disable_widget_recursive(child)
+        except:
+            pass
+
+    def _enable_widget_recursive(self, widget):
+        """Recursively enable widgets."""
+        try:
+            widget_type = widget.winfo_class()
+            if widget_type in ('TButton', 'TEntry', 'TCombobox', 'TSpinbox', 'TRadiobutton', 'TCheckbutton'):
+                widget.configure(state='normal')
+            elif widget_type == 'TNotebook':
+                # Enable tab switching
+                for tab_id in range(widget.index('end')):
+                    widget.tab(tab_id, state='normal')
+
+            for child in widget.winfo_children():
+                self._enable_widget_recursive(child)
+        except:
+            pass
+
     def start_processing(self):
         """Start the processing operation."""
         if not self.validate_inputs():
@@ -1345,9 +1403,10 @@ Features:
         self.stop_event.clear()
         self.is_processing = True
 
-        # Update UI state
-        self.process_btn.configure(state='disabled')
-        self.stop_btn.configure(state='normal')
+        # Lock UI to prevent changes during processing
+        self.lock_ui()
+
+        # Update status
         self.status_var.set("Processing...")
         self.progress_var.set(0)
 
@@ -1433,8 +1492,9 @@ Features:
     def processing_complete(self, success, conversion_stats=None):
         """Handle processing completion."""
         self.is_processing = False
-        self.process_btn.configure(state='normal')
-        self.stop_btn.configure(state='disabled')
+
+        # Unlock UI
+        self.unlock_ui()
 
         if success:
             if conversion_stats and 'failed' in conversion_stats and conversion_stats['failed'] > 0:
@@ -1468,8 +1528,10 @@ Features:
     def processing_stopped(self):
         """Handle processing being stopped by user."""
         self.is_processing = False
-        self.process_btn.configure(state='normal')
-        self.stop_btn.configure(state='disabled')
+
+        # Unlock UI
+        self.unlock_ui()
+
         self.status_var.set("Processing stopped by user")
         self.progress_var.set(0)
         messagebox.showinfo("Stopped", "Processing was stopped by user.")
