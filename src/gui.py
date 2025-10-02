@@ -39,10 +39,9 @@ class RTF2PDFGUI:
     def __init__(self, root):
         self.root = root
         self.root.title("RTF to PDF Converter with TOC")
-        self.root.geometry("900x700")
 
-        # Add maximize button functionality
-        self.root.state('normal')  # Ensure window is normal state
+        # Start maximized for better visibility
+        self.root.state('zoomed')
 
         # Set theme colors
         self.bg_color = "#f0f0f0"
