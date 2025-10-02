@@ -1379,13 +1379,32 @@ Features:
                 return
 
             widget_type = widget.winfo_class()
-            if widget_type in ('TButton', 'TEntry', 'TCombobox', 'TSpinbox', 'TRadiobutton', 'TCheckbutton'):
+
+            # Disable all interactive widgets
+            if widget_type in ('TButton', 'Button'):
+                widget.configure(state='disabled')
+            elif widget_type in ('TEntry', 'Entry'):
+                widget.configure(state='disabled')
+            elif widget_type in ('TCombobox', 'Combobox'):
+                widget.configure(state='disabled')
+            elif widget_type in ('TSpinbox', 'Spinbox'):
+                widget.configure(state='disabled')
+            elif widget_type in ('TRadiobutton', 'Radiobutton'):
+                widget.configure(state='disabled')
+            elif widget_type in ('TCheckbutton', 'Checkbutton'):
                 widget.configure(state='disabled')
             elif widget_type == 'TNotebook':
                 # Disable tab switching
                 for tab_id in range(widget.index('end')):
                     widget.tab(tab_id, state='disabled')
+            elif widget_type == 'Treeview':
+                # Disable tree interactions
+                widget.configure(selectmode='none')
+            elif widget_type == 'Text':
+                # Disable text widget (except log output)
+                widget.configure(state='disabled')
 
+            # Recurse to children
             for child in widget.winfo_children():
                 self._disable_widget_recursive(child)
         except:
@@ -1395,13 +1414,32 @@ Features:
         """Recursively enable widgets."""
         try:
             widget_type = widget.winfo_class()
-            if widget_type in ('TButton', 'TEntry', 'TCombobox', 'TSpinbox', 'TRadiobutton', 'TCheckbutton'):
+
+            # Enable all interactive widgets
+            if widget_type in ('TButton', 'Button'):
+                widget.configure(state='normal')
+            elif widget_type in ('TEntry', 'Entry'):
+                widget.configure(state='normal')
+            elif widget_type in ('TCombobox', 'Combobox'):
+                widget.configure(state='readonly')  # Combobox should be readonly, not normal
+            elif widget_type in ('TSpinbox', 'Spinbox'):
+                widget.configure(state='normal')
+            elif widget_type in ('TRadiobutton', 'Radiobutton'):
+                widget.configure(state='normal')
+            elif widget_type in ('TCheckbutton', 'Checkbutton'):
                 widget.configure(state='normal')
             elif widget_type == 'TNotebook':
                 # Enable tab switching
                 for tab_id in range(widget.index('end')):
                     widget.tab(tab_id, state='normal')
+            elif widget_type == 'Treeview':
+                # Re-enable tree interactions
+                widget.configure(selectmode='browse')
+            elif widget_type == 'Text':
+                # Re-enable text widget
+                widget.configure(state='normal')
 
+            # Recurse to children
             for child in widget.winfo_children():
                 self._enable_widget_recursive(child)
         except:
