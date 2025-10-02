@@ -742,6 +742,9 @@ Features:
 
     def refresh_file_mapping_row(self, item, mapping):
         """Refresh a single row in the file mapping table."""
+        # Get current mode
+        mode = self.sort_mode.get()
+        
         # Get section label
         section_display = "Not Mapped"
         if mapping.section_number:
@@ -749,12 +752,17 @@ Features:
             if section:
                 section_display = f"{section.section_number} - {section.section_label}"
 
-        # Get status with emoji
-        status_text = {
-            "mapped": "✅ Mapped",
-            "unmapped": "⚠️ Not Mapped",
-            "ignored": "🚫 Ignored"
-        }.get(mapping.status, mapping.status)
+        # Get status with emoji (adjust for default mode)
+        if mode == "default":
+            # Default mode: no mapping needed, just ready or ignored
+            status_text = "🚫 Ignored" if mapping.ignore else "📄 Ready"
+        else:
+            # ICH/Custom mode: show mapping status
+            status_text = {
+                "mapped": "✅ Mapped",
+                "unmapped": "⚠️ Not Mapped",
+                "ignored": "🚫 Ignored"
+            }.get(mapping.status, mapping.status)
 
         # Get ignore display
         ignore_display = "✓" if mapping.ignore else ""
