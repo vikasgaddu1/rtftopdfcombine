@@ -505,15 +505,14 @@ Features:
             return  # Don't allow editing ignored files
 
         # Create combobox for section selection
-        section_values = ["Select..."]
+        section_values = []
         for section in self.session_state.section_definitions:
             section_values.append(f"{section.section_number} - {section.section_label}")
 
-        # Create popup combobox with larger size and better font
+        # Create popup combobox with search capability
         combo = ttk.Combobox(
             self.files_tree,
             values=section_values,
-            state="readonly",
             font=('TkDefaultFont', 10),
             width=50
         )
@@ -522,18 +521,35 @@ Features:
         if current_section and current_section != "Not Mapped":
             combo.set(current_section)
         else:
-            combo.set("Select...")
+            combo.set("")
+
+        # Store all values for filtering
+        all_values = section_values.copy()
 
         # Position the combobox (make it wider than the column for better visibility)
-        combo.place(x=bbox[0], y=bbox[1], width=min(400, bbox[2] + 100), height=bbox[3])
+        combo.place(x=bbox[0], y=bbox[1], width=min(450, bbox[2] + 150), height=bbox[3])
         combo.focus()
 
         # Automatically show the dropdown
         combo.event_generate('<Button-1>')
 
+        def on_keyrelease(event):
+            """Filter dropdown as user types."""
+            typed = combo.get().lower()
+            if typed == "":
+                combo['values'] = all_values
+            else:
+                # Filter values based on typed text
+                filtered = [v for v in all_values if typed in v.lower()]
+                combo['values'] = filtered
+
+            # Keep dropdown open and show filtered results
+            if filtered:
+                combo.event_generate('<Down>')
+
         def on_select(event):
             selected = combo.get()
-            if selected and selected != "Select...":
+            if selected and selected in all_values:
                 # Extract section number
                 section_number = selected.split(" - ")[0]
                 mapping.section_number = section_number
@@ -546,6 +562,7 @@ Features:
         def on_focusout(event):
             combo.destroy()
 
+        combo.bind("<KeyRelease>", on_keyrelease)
         combo.bind("<<ComboboxSelected>>", on_select)
         combo.bind("<FocusOut>", on_focusout)
         combo.bind("<Escape>", lambda e: combo.destroy())
@@ -589,17 +606,11 @@ Features:
 
     def refresh_file_mapping_display(self):
         """Refresh the entire file mapping table."""
-        logging.info(f"[DEBUG] refresh_file_mapping_display() - Starting refresh")
-        logging.info(f"[DEBUG] refresh_file_mapping_display() - Session state has {len(self.session_state.file_mappings)} mappings")
-
         # Clear existing items
-        existing_items = self.files_tree.get_children()
-        logging.info(f"[DEBUG] refresh_file_mapping_display() - Clearing {len(existing_items)} existing items")
-        for item in existing_items:
+        for item in self.files_tree.get_children():
             self.files_tree.delete(item)
 
         # Add files from session state
-        items_added = 0
         for mapping in self.session_state.file_mappings:
             # Get section label
             section_display = "Not Mapped"
@@ -625,20 +636,16 @@ Features:
                 ignore_display,
                 status_text
             ))
-            items_added += 1
 
             # Apply styling
             if mapping.ignore:
                 self.files_tree.item(item, tags=("ignored",))
-
-        logging.info(f"[DEBUG] refresh_file_mapping_display() - Added {items_added} items to tree")
 
         # Configure tag colors
         self.files_tree.tag_configure("ignored", foreground="gray")
 
         # Update summary
         self.update_files_summary()
-        logging.info(f"[DEBUG] refresh_file_mapping_display() - Refresh complete")
 
     def update_files_summary(self):
         """Update the files summary label."""
@@ -908,25 +915,19 @@ Features:
     def on_sort_mode_change(self):
         """Handle sort mode selection change."""
         mode = self.sort_mode.get()
-        logging.info(f"[DEBUG] on_sort_mode_change() - Mode changed to: {mode}")
-
         self.session_state.set_sort_mode(mode)
 
         # Show/hide configuration buttons and tab
         if mode in ["ich", "custom"]:
-            logging.info(f"[DEBUG] on_sort_mode_change() - Showing config buttons")
             self.config_buttons_frame.pack(fill=tk.X, pady=5)
 
             # Load ICH sections if ICH mode selected
             if mode == "ich":
-                logging.info(f"[DEBUG] on_sort_mode_change() - Loading ICH sections")
                 self.load_ich_sections()
 
             # Scan RTF files for both ICH and Custom modes
-            logging.info(f"[DEBUG] on_sort_mode_change() - About to call scan_rtf_files()")
             self.scan_rtf_files()
         else:
-            logging.info(f"[DEBUG] on_sort_mode_change() - Hiding config buttons")
             self.config_buttons_frame.pack_forget()
 
         # Update configuration tab visibility
@@ -962,22 +963,18 @@ Features:
     def scan_rtf_files(self):
         """Scan input folder for RTF files and update session state."""
         input_path = Path(self.input_folder.get())
-        logging.info(f"[DEBUG] scan_rtf_files() - Input path: {input_path}, exists: {input_path.exists()}")
 
         if input_path.exists():
             rtf_files = list(input_path.glob("*.rtf"))
-            logging.info(f"[DEBUG] scan_rtf_files() - Found {len(rtf_files)} RTF files: {[f.name for f in rtf_files]}")
+            logging.info(f"Found {len(rtf_files)} RTF files in input folder")
 
             self.session_state.update_rtf_files(rtf_files)
-            logging.info(f"[DEBUG] scan_rtf_files() - Session state has {len(self.session_state.file_mappings)} file mappings")
 
             # Update file mapping tab display
             self.refresh_file_mapping_display()
-            logging.info(f"[DEBUG] scan_rtf_files() - Called refresh_file_mapping_display()")
 
     def update_file_mapping_display(self):
         """Update the file mapping display (legacy method - calls refresh)."""
-        logging.info(f"[DEBUG] update_file_mapping_display() called - redirecting to refresh_file_mapping_display()")
         self.refresh_file_mapping_display()
 
     def import_config(self):
