@@ -22,7 +22,8 @@ class BulkSectionImportDialog:
         # Create dialog
         self.dialog = tk.Toplevel(parent)
         self.dialog.title("Bulk Import Sections from Excel")
-        self.dialog.geometry("800x600")
+        self.dialog.geometry("850x700")  # Increased size to ensure buttons are visible
+        self.dialog.minsize(800, 650)   # Set minimum size
         self.dialog.transient(parent)
         self.dialog.grab_set()
 
