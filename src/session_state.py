@@ -254,9 +254,6 @@ class SessionState:
         # Clear current state
         self.clear()
 
-        # Restore rtf_files for matching
-        self.rtf_files = preserved_rtf_files
-
         # Set sort mode
         self.sort_mode = config.get("sort_mode", "custom")
 
@@ -265,6 +262,11 @@ class SessionState:
             self.section_definitions.append(
                 SectionDefinition.from_dict(section_data)
             )
+
+        # Restore rtf_files AND create FileMapping objects
+        # This is CRITICAL - calling update_rtf_files creates the mapping objects
+        if preserved_rtf_files:
+            self.update_rtf_files(preserved_rtf_files)
 
         # Load file mappings
         imported_mappings = []
