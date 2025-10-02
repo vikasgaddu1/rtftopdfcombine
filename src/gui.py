@@ -1075,6 +1075,13 @@ Features:
         ttk.Button(button_frame, text="Delete Selected",
                   command=self.delete_section).pack(side=tk.LEFT, padx=5)
 
+        # Separator
+        ttk.Separator(button_frame, orient='vertical').pack(side=tk.LEFT, fill=tk.Y, padx=10)
+
+        # Bulk import button
+        ttk.Button(button_frame, text="📊 Import from Excel",
+                  command=self.bulk_import_sections).pack(side=tk.LEFT, padx=5)
+
         # Reset button (only for ICH mode)
         self.reset_sections_btn = ttk.Button(button_frame, text="Reset to ICH Defaults",
                                              command=self.reset_ich_sections)
@@ -1296,6 +1303,20 @@ Features:
             logging.info(f"Deleted section: {section_number} (affected {len(affected)} files)")
             self.refresh_sections_display()
             self.update_file_mapping_display()  # Update dropdowns and clear mappings
+
+    def bulk_import_sections(self):
+        """Import sections in bulk from Excel file."""
+        # Import dialog
+        from src.bulk_import_dialog import BulkSectionImportDialog
+
+        dialog = BulkSectionImportDialog(self.root, self.session_state)
+        result = dialog.show()
+
+        # Refresh display if sections were imported
+        if result and result.success and result.imported_count > 0:
+            self.refresh_sections_display()
+            self.update_sections_summary()
+            logging.info(f"Bulk import completed: {result.imported_count} sections imported")
 
     def reset_ich_sections(self):
         """Reset sections to ICH defaults."""
