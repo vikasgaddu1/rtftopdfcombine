@@ -219,8 +219,6 @@ Configuration Tab:
         self.file_menu = tk.Menu(self.menubar, tearoff=0)
         self.menubar.add_cascade(label="File", menu=self.file_menu)
         self.file_menu.add_command(label="Browse Input Folder", command=self.browse_input, accelerator="Ctrl+O")
-        self.file_menu.add_command(label="Import Config", command=self.import_config, accelerator="Ctrl+I")
-        self.file_menu.add_command(label="Export Config", command=self.export_config, accelerator="Ctrl+S")
         self.file_menu.add_separator()
         self.file_menu.add_command(label="Exit", command=self.on_closing)
 
@@ -303,17 +301,17 @@ Features:
         config_frame.pack(fill=tk.X, pady=5)
 
         config_button_frame = ttk.Frame(config_frame)
-        config_button_frame.pack(pady=5)
+        config_button_frame.pack(anchor=tk.W, pady=5)
 
         ttk.Button(config_button_frame, text="📥 Import Configuration (Ctrl+I)",
-                  command=self.import_config).pack(side=tk.LEFT, padx=5)
+                  command=self.import_config).pack(side=tk.LEFT, padx=(0, 5))
         ttk.Button(config_button_frame, text="📤 Export Configuration (Ctrl+S)",
-                  command=self.export_config).pack(side=tk.LEFT, padx=5)
+                  command=self.export_config).pack(side=tk.LEFT)
 
         ttk.Label(config_frame,
                  text="💡 Save/load your section definitions, file mappings, and pattern rules",
                  font=('TkDefaultFont', 8, 'italic'),
-                 foreground='#666').pack(pady=(0, 5))
+                 foreground='#666').pack(anchor=tk.W, pady=(0, 5))
 
         # PDF Options
         pdf_frame = ttk.LabelFrame(main_frame, text="PDF Options", padding="5")
@@ -411,20 +409,6 @@ Features:
 
     def create_config_tab(self):
         """Create the configuration tab with sub-tabs."""
-        # Configuration buttons at the top (shown only for ICH/Custom modes)
-        self.config_buttons_frame = ttk.Frame(self.config_tab)
-        self.config_buttons_frame.pack(fill=tk.X, padx=10, pady=5)
-
-        ttk.Label(self.config_buttons_frame, text="Configuration:",
-                 font=('TkDefaultFont', 9, 'bold')).pack(side=tk.LEFT, padx=5)
-        ttk.Button(self.config_buttons_frame, text="📥 Import Config (Ctrl+I)",
-                  command=self.import_config).pack(side=tk.LEFT, padx=5)
-        ttk.Button(self.config_buttons_frame, text="📤 Export Config (Ctrl+S)",
-                  command=self.export_config).pack(side=tk.LEFT, padx=5)
-
-        # Hide config buttons initially (default mode is selected)
-        self.config_buttons_frame.pack_forget()
-
         # Create notebook for configuration sub-tabs (with smaller tabs)
         self.config_notebook = ttk.Notebook(self.config_tab, style='Config.TNotebook')
         self.config_notebook.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
@@ -1486,9 +1470,8 @@ Features:
 
         self.session_state.set_sort_mode(new_mode)
 
-        # Show/hide configuration buttons and tab
+        # Show/hide hint label based on mode
         if new_mode in ["ich", "custom"]:
-            self.config_buttons_frame.pack(fill=tk.X, pady=5)
             # Show hint label for ICH/Custom modes
             self.process_hint_label.pack(pady=(0, 5))
 
@@ -1504,7 +1487,6 @@ Features:
             self.scan_rtf_files()
         else:
             # Default mode
-            self.config_buttons_frame.pack_forget()
             # Hide hint label for Default mode
             self.process_hint_label.pack_forget()
             # Clear sections (not needed for default mode)
