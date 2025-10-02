@@ -1236,13 +1236,27 @@ Features:
 
         if file_path:
             try:
-                # IMPORTANT: Scan RTF files BEFORE importing
+                # Load config first to get the input folder path
+                with open(file_path, 'r', encoding='utf-8') as f:
+                    import json
+                    config = json.load(f)
+
+                # Get input folder from config if available
+                input_folder_path = None
+                if 'settings' in config and 'input_folder' in config['settings']:
+                    input_folder_path = Path(config['settings']['input_folder'])
+                else:
+                    # Fall back to current input folder
+                    input_folder_path = Path(self.input_folder.get())
+
+                # IMPORTANT: Scan RTF files BEFORE importing using the correct path
                 # Otherwise import_from_json will clear rtf_files and matching will fail
-                input_path = Path(self.input_folder.get())
-                if input_path.exists():
-                    rtf_files = list(input_path.glob("*.rtf"))
+                if input_folder_path and input_folder_path.exists():
+                    rtf_files = list(input_folder_path.glob("*.rtf"))
                     self.session_state.rtf_files = rtf_files
                     logging.info(f"Pre-import: Found {len(rtf_files)} RTF files for matching")
+                else:
+                    logging.warning(f"Input folder not found: {input_folder_path}")
 
                 summary = self.session_state.import_from_json(Path(file_path))
                 
