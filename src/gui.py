@@ -793,16 +793,18 @@ Features:
 
             # Get status (adjust for default mode)
             if mode == "default":
-                status_text = "🚫 Ignored" if mapping.ignore else "✅ Ready"
+                # Default mode: no mapping needed, just ready or ignored
+                status_text = "🚫 Ignored" if mapping.ignore else "📄 Ready"
             else:
+                # ICH/Custom mode: show mapping status
                 status_text = {
                     "mapped": "✅ Mapped",
                     "unmapped": "⚠️ Not Mapped",
                     "ignored": "🚫 Ignored"
                 }.get(mapping.status, mapping.status)
 
-            # Get ignore display with clearer checkbox symbols
-            ignore_display = "✓" if mapping.ignore else ""
+            # Get ignore display with more visible checkbox
+            ignore_display = "☑" if mapping.ignore else "☐"
 
             # Insert row
             item = self.files_tree.insert("", tk.END, values=(
