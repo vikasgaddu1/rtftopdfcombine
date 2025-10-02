@@ -981,7 +981,8 @@ Features:
         """Import configuration from JSON file."""
         file_path = filedialog.askopenfilename(
             title="Import Configuration",
-            filetypes=[("JSON files", "*.json"), ("All files", "*.*")]
+            filetypes=[("JSON files", "*.json"), ("All files", "*.*")],
+            initialdir=Path.cwd() / "config"
         )
 
         if file_path:
@@ -1004,8 +1005,11 @@ Features:
                 messagebox.showinfo("Import Successful", message)
                 logging.info(f"Configuration imported from: {file_path}")
 
-                # Update displays
-                self.update_file_mapping_display()
+                # Update all displays
+                self.refresh_sections_display()
+                self.refresh_file_mapping_display()
+                self.update_sections_summary()
+                self.update_files_summary()
 
             except Exception as e:
                 messagebox.showerror("Import Error", f"Failed to import configuration:\n{str(e)}")
@@ -1015,6 +1019,10 @@ Features:
         """Export current configuration to JSON file."""
         from datetime import datetime
 
+        # Ensure config directory exists
+        config_dir = Path.cwd() / "config"
+        config_dir.mkdir(exist_ok=True)
+
         # Generate default filename
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         default_filename = f"rtf2pdf_config_{timestamp}.json"
@@ -1023,7 +1031,8 @@ Features:
             title="Export Configuration",
             defaultextension=".json",
             filetypes=[("JSON files", "*.json"), ("All files", "*.*")],
-            initialfile=default_filename
+            initialfile=default_filename,
+            initialdir=config_dir
         )
 
         if file_path:
