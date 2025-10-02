@@ -248,8 +248,14 @@ class SessionState:
         with open(filepath, 'r', encoding='utf-8') as f:
             config = json.load(f)
 
+        # Preserve rtf_files before clearing (needed for file matching)
+        preserved_rtf_files = self.rtf_files.copy()
+
         # Clear current state
         self.clear()
+
+        # Restore rtf_files for matching
+        self.rtf_files = preserved_rtf_files
 
         # Set sort mode
         self.sort_mode = config.get("sort_mode", "custom")

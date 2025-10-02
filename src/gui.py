@@ -1014,6 +1014,14 @@ Features:
 
         if file_path:
             try:
+                # IMPORTANT: Scan RTF files BEFORE importing
+                # Otherwise import_from_json will clear rtf_files and matching will fail
+                input_path = Path(self.input_folder.get())
+                if input_path.exists():
+                    rtf_files = list(input_path.glob("*.rtf"))
+                    self.session_state.rtf_files = rtf_files
+                    logging.info(f"Pre-import: Found {len(rtf_files)} RTF files for matching")
+
                 summary = self.session_state.import_from_json(Path(file_path))
 
                 # Show import summary
