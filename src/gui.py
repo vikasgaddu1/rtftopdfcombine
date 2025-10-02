@@ -498,13 +498,17 @@ Features:
             if column == "#3":
                 # Use after to prevent event conflicts
                 self.root.after(1, lambda: self.toggle_file_ignore(item))
-            # Section column - open dropdown (SINGLE CLICK!)
-            elif column == "#2":
+            # Section column - open dropdown (SINGLE CLICK!) - only in ICH/Custom mode
+            elif column == "#2" and self.sort_mode.get() != "default":
                 # Use after to ensure UI is ready
                 self.root.after(1, lambda: self.edit_file_section(item, event.x, event.y))
 
     def on_file_enter_key(self, event):
-        """Handle Enter key - edit selected row's section."""
+        """Handle Enter key - edit selected row's section (only in ICH/Custom mode)."""
+        # Only allow section editing in ICH/Custom mode
+        if self.sort_mode.get() == "default":
+            return "break"
+
         selection = self.files_tree.selection()
         if selection:
             item = selection[0]
@@ -758,6 +762,15 @@ Features:
 
     def refresh_file_mapping_display(self):
         """Refresh the entire file mapping table."""
+        # Hide/show section column based on mode
+        mode = self.sort_mode.get()
+        if mode == "default":
+            # Hide section column in default mode
+            self.files_tree["displaycolumns"] = ("filename", "ignore", "status")
+        else:
+            # Show all columns in ICH/Custom mode
+            self.files_tree["displaycolumns"] = ("filename", "section", "ignore", "status")
+
         # Clear existing items
         for item in self.files_tree.get_children():
             self.files_tree.delete(item)
@@ -771,12 +784,15 @@ Features:
                 if section:
                     section_display = f"{section.section_number} - {section.section_label}"
 
-            # Get status
-            status_text = {
-                "mapped": "✅ Mapped",
-                "unmapped": "⚠️ Not Mapped",
-                "ignored": "🚫 Ignored"
-            }.get(mapping.status, mapping.status)
+            # Get status (adjust for default mode)
+            if mode == "default":
+                status_text = "🚫 Ignored" if mapping.ignore else "✅ Ready"
+            else:
+                status_text = {
+                    "mapped": "✅ Mapped",
+                    "unmapped": "⚠️ Not Mapped",
+                    "ignored": "🚫 Ignored"
+                }.get(mapping.status, mapping.status)
 
             # Get ignore display with clearer checkbox symbols
             ignore_display = "✓" if mapping.ignore else ""
@@ -1090,11 +1106,14 @@ Features:
             # Scan RTF files for both ICH and Custom modes
             self.scan_rtf_files()
         else:
+            # Default mode
             self.config_buttons_frame.pack_forget()
             # Hide hint label for Default mode
             self.process_hint_label.pack_forget()
-            # Default mode - clear session state
-            self.session_state.clear()
+            # Clear sections (not needed for default mode)
+            self.session_state.section_definitions.clear()
+            # But scan RTF files so File Mapping tab can show files with Ignore checkbox
+            self.scan_rtf_files()
 
         # Update configuration tab visibility
         self.update_config_tab_visibility()
@@ -1122,14 +1141,22 @@ Features:
         """Show/hide configuration tab based on sort mode."""
         mode = self.sort_mode.get()
 
-        if mode in ["ich", "custom"]:
-            # Enable Configuration tab
-            self.notebook.tab(1, state="normal")
+        # Configuration tab is now available for all modes (default, ich, custom)
+        # Enable Configuration tab for all modes
+        self.notebook.tab(1, state="normal")
+
+        # Show/hide Section Definition tab within Configuration based on mode
+        if mode == "default":
+            # Default mode: Only show File Mapping tab (hide Section Definition)
+            self.config_notebook.hide(self.section_def_frame)
         else:
-            # Disable Configuration tab and switch to Main if on Config
-            if self.notebook.index("current") == 1:
-                self.notebook.select(0)  # Switch to Main tab
-            self.notebook.tab(1, state="disabled")
+            # ICH/Custom mode: Show both tabs
+            # Check if Section Definition tab is hidden, then show it
+            try:
+                self.config_notebook.index(self.section_def_frame)
+            except:
+                # Tab is hidden, add it back
+                self.config_notebook.add(self.section_def_frame, text="Section Definition")
 
     def load_ich_sections(self):
         """Load default ICH sections into session state."""
