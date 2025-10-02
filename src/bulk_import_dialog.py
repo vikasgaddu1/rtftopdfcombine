@@ -292,12 +292,22 @@ class BulkSectionImportDialog:
         self.status_label.config(text="Importing sections...")
 
         try:
+            # Log session state before import
+            before_count = len(self.session_state.section_definitions)
+            logging.info(f"Before import: {before_count} sections in session state")
+
             # Perform import
             result = import_sections_from_excel(
                 self.selected_file,
                 self.session_state,
                 skip_conflicts=self.skip_conflicts_var.get()
             )
+
+            # Log session state after import
+            after_count = len(self.session_state.section_definitions)
+            logging.info(f"After import: {after_count} sections in session state")
+            if after_count > 0:
+                logging.info(f"Sample sections: {[(s.section_number, s.section_label) for s in self.session_state.section_definitions[:3]]}")
 
             # Display results
             self._clear_results()

@@ -1314,9 +1314,17 @@ Features:
 
         # Refresh display if sections were imported
         if result and result.success and result.imported_count > 0:
-            self.refresh_sections_display()
-            self.update_sections_summary()
             logging.info(f"Bulk import completed: {result.imported_count} sections imported")
+            logging.info(f"Total sections in session state: {len(self.session_state.section_definitions)}")
+
+            # Refresh sections display
+            self.refresh_sections_display()
+
+            # Also refresh file mapping display to update dropdowns
+            self.refresh_file_mapping_display()
+
+            # Force UI update
+            self.root.update_idletasks()
 
     def reset_ich_sections(self):
         """Reset sections to ICH defaults."""
