@@ -293,8 +293,9 @@ class SessionState:
 
 
 # Default ICH E3 sections - from iche3_categories.xlsx
+# Section "14" is header-only and not assignable to files
 DEFAULT_ICH_SECTIONS = [
-    ("14", "Tables, Figures and Graphs Referred to But Not Included in the Text"),
+    ("14", "Tables, Figures and Graphs Referred to But Not Included in the Text"),  # Header only
     ("14.1", "Demographic Data"),
     ("14.2", "Efficacy Data"),
     ("14.3", "Safety Data"),
@@ -311,10 +312,18 @@ DEFAULT_ICH_SECTIONS = [
     ("16.2.8", "Listing of individual laboratory measurements by patient"),
 ]
 
+# Header-only sections (not assignable to files)
+HEADER_ONLY_SECTIONS = ["14", "16.2"]
+
 
 def load_default_ich_sections() -> List[SectionDefinition]:
-    """Load the default ICH E3 sections."""
+    """
+    Load the default ICH E3 sections.
+    Excludes header-only sections that cannot be assigned to files.
+    """
     sections = []
     for number, label in DEFAULT_ICH_SECTIONS:
-        sections.append(SectionDefinition(number, label))
+        # Skip header-only sections
+        if number not in HEADER_ONLY_SECTIONS:
+            sections.append(SectionDefinition(number, label))
     return sections
