@@ -306,9 +306,9 @@ Features:
         config_button_frame.pack(pady=5)
 
         ttk.Button(config_button_frame, text="📥 Import Configuration (Ctrl+I)",
-                  command=self.import_configuration).pack(side=tk.LEFT, padx=5)
+                  command=self.import_config).pack(side=tk.LEFT, padx=5)
         ttk.Button(config_button_frame, text="📤 Export Configuration (Ctrl+S)",
-                  command=self.export_configuration).pack(side=tk.LEFT, padx=5)
+                  command=self.export_config).pack(side=tk.LEFT, padx=5)
 
         ttk.Label(config_frame,
                  text="💡 Save/load your section definitions, file mappings, and pattern rules",
