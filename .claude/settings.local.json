@@ -6,7 +6,10 @@
       "Bash(git commit:*)",
       "Bash(powershell.exe:*)",
       "Bash(dir:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git checkout:*)",
+      "Bash(python test_regex.py:*)",
+      "Bash(del test_regex.py)"
     ],
     "deny": [],
     "ask": []
