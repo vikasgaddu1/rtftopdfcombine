@@ -7,6 +7,7 @@ from dataclasses import dataclass, field
 from typing import List, Optional, Dict, Any
 from pathlib import Path
 import json
+import logging
 from datetime import datetime
 
 
@@ -282,7 +283,9 @@ class SessionState:
         # Load file mappings
         imported_mappings = []
         for mapping_data in config.get("file_mappings", []):
-            imported_mappings.append(FileMapping.from_dict(mapping_data))
+            mapping = FileMapping.from_dict(mapping_data)
+            imported_mappings.append(mapping)
+            logging.debug(f"Loaded mapping from config: {mapping.filename}, ignore={mapping.ignore}")
 
         # Match imported mappings with current files
         current_filenames = {f.stem for f in self.rtf_files}
@@ -296,6 +299,9 @@ class SessionState:
                     existing_mapping.section_number = imported_mapping.section_number
                     existing_mapping.ignore = imported_mapping.ignore
                     matched_count += 1
+                    # Debug logging
+                    if imported_mapping.ignore:
+                        logging.info(f"Restored ignore status for file: {imported_mapping.filename}")
 
         # Calculate summary
         summary = {

@@ -822,6 +822,10 @@ Features:
 
             # Get ignore display with more visible checkbox
             ignore_display = "☑" if mapping.ignore else "☐"
+            
+            # Debug log for ignored files
+            if mapping.ignore:
+                logging.debug(f"Displaying file {mapping.filename} with ignore=True, checkbox={ignore_display}")
 
             # Insert row
             item = self.files_tree.insert("", tk.END, values=(
@@ -1237,6 +1241,10 @@ Features:
                     logging.info(f"Pre-import: Found {len(rtf_files)} RTF files for matching")
 
                 summary = self.session_state.import_from_json(Path(file_path))
+                
+                # Update sort mode in GUI to match imported config
+                self.sort_mode.set(self.session_state.sort_mode)
+                logging.info(f"Restored sort mode: {self.session_state.sort_mode}")
 
                 # Restore settings if they exist in the imported config
                 if 'settings' in summary and summary['settings']:
@@ -1292,6 +1300,10 @@ Features:
                 self.refresh_file_mapping_display()
                 self.update_sections_summary()
                 self.update_files_summary()
+                
+                # Debug: Check if ignore status was preserved
+                ignored_count = sum(1 for m in self.session_state.file_mappings if m.ignore)
+                logging.info(f"After import refresh: {ignored_count} files are marked as ignored")
 
             except Exception as e:
                 messagebox.showerror("Import Error", f"Failed to import configuration:\n{str(e)}")
