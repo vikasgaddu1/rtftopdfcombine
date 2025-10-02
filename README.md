@@ -4,16 +4,27 @@ A Python application that converts RTF files to PDF and combines them into a sin
 
 ## Features
 
+### Core Functionality
 - Convert multiple RTF files to PDF
-- Automatic or manual section organization
 - Generate table of contents with page numbers
 - Create PDF bookmarks for easy navigation
 - Modern GUI interface with progress tracking
 - Configurable PDF settings
 - Real-time conversion progress
 - Detailed logging
-- Support for both automatic and manual section organization
-- All settings configured through the GUI (no configuration files)
+
+### Version 3.0 Features
+- **Three Sort Modes**: Default (automatic), ICH E3, or Custom sections
+- **Pattern-Based File Mapping**: Map 50+ files in seconds using regex/wildcard patterns
+  - Quick Pattern assignment with live preview
+  - Reusable pattern rules with priority-based conflict resolution
+  - Pattern templates for common use cases
+- **Bulk Section Import**: Import section definitions from Excel files
+  - Validate before import with preview mode
+  - Conflict detection and handling
+  - Sample template generator
+- **Configuration Management**: Export/import complete configurations (sections, mappings, pattern rules)
+- **Interactive File Mapping**: Assign files to sections with dropdown selection or pattern matching
 
 ## Requirements
 
@@ -100,13 +111,47 @@ Create your own section structure for maximum flexibility:
 1. Switch to **Custom Sort** mode
 2. Go to the **Configuration** tab
 3. In the **Section Definition** tab:
-   - Click "Add Section" to create custom sections
+   - Click "Add Section" to create custom sections manually
+   - OR click "📊 Import from Excel" to bulk import sections from Excel file
    - Define section numbers (e.g., "1.1", "2.3")
    - Define section labels (e.g., "Introduction", "Results")
 4. In the **File Mapping** tab:
-   - Double-click a file's Section column to assign it
+   - **Manual Assignment**: Click a file's Section column to assign it
+   - **Pattern-Based Mapping**: Use "⚡ Quick Pattern" to map multiple files at once
+     - Select files with similar names
+     - Click "Quick Pattern" button
+     - Auto-suggest or enter a regex/wildcard pattern
+     - Preview matches and apply to all matching files
+   - **Batch Operations**: Use "📋 Manage Rules" to create reusable pattern rules
    - Click the checkbox to ignore files
-5. Save your configuration using "Export Config" for reuse
+5. Save your configuration using "📤 Export Configuration" on Main tab for reuse
+
+### New in Version 3.0
+
+#### Pattern-Based File Mapping
+Map multiple files to sections in seconds:
+- **Quick Pattern**: Select files → Get pattern suggestion → Apply to all matches
+- **Pattern Rules**: Create reusable rules with priorities for future projects
+- **Templates**: Built-in regex and wildcard pattern examples
+- **Live Preview**: See which files match before applying
+
+Example: Map all files starting with "fslb" to Section 14.3.1 using pattern `^fslb.*`
+
+#### Bulk Section Import
+Import sections from Excel instead of typing manually:
+- Required columns: `section_number` and `section_label`
+- Preview import before committing
+- Conflict detection with existing sections
+- Download sample template to get started
+
+Example: Import 15 ICH E3 sections from Excel in 10 seconds
+
+#### Configuration Management
+All configurations now include:
+- Section definitions
+- File mappings (which file goes to which section)
+- Pattern rules (for reusable pattern-based mapping)
+- Located on **Main tab** for easy access
 
 ### Output
 
@@ -172,20 +217,28 @@ After successful completion, you'll find the executables in the `dist` folder:
 
 ```
 rtf2pdfcombine/
-├── run_gui.py              # GUI launcher
-├── main.py                 # Main processing logic
-├── requirements.txt        # Python dependencies
-├── input/                  # Input RTF files
-├── output/                 # Generated PDFs
-│   └── _pdf/              # Individual PDFs
-├── docs/                   # Documentation and mapping files
+├── run_gui.py                      # GUI launcher
+├── main.py                         # Main processing logic
+├── requirements.txt                # Python dependencies
+├── input/                          # Input RTF files
+├── output/                         # Generated PDFs
+│   └── _pdf/                      # Individual PDFs
+├── docs/                           # Documentation
+│   ├── USER_GUIDE.md              # Comprehensive user guide
+│   ├── PATTERN_MAPPING_USER_GUIDE.md  # Pattern-based mapping guide
+│   └── iche3_categories.xlsx      # ICH E3 section definitions
 └── src/
-    ├── gui.py             # GUI implementation
-    ├── gui_config.py      # GUI configuration holder
-    ├── rtf_converter.py   # RTF to PDF conversion
-    ├── rtf_parser.py      # RTF title extraction
-    ├── data_processing.py # Data handling and validation
-    └── pdf_utils.py       # PDF generation utilities
+    ├── gui.py                     # GUI implementation
+    ├── gui_config.py              # GUI configuration holder
+    ├── session_state.py           # Session state management
+    ├── pattern_rules.py           # Pattern matching logic
+    ├── pattern_dialogs.py         # Pattern UI dialogs
+    ├── bulk_section_import.py     # Excel section import logic
+    ├── bulk_import_dialog.py      # Bulk import UI dialog
+    ├── rtf_converter.py           # RTF to PDF conversion
+    ├── rtf_parser.py              # RTF title extraction
+    ├── data_processing.py         # Data handling and validation
+    └── pdf_utils.py               # PDF generation utilities
 ```
 
 ## GUI Settings
@@ -196,6 +249,11 @@ All application settings are configured through the GUI interface:
 - **Section Mode**: Toggle between automatic and manual modes
 - **PDF Settings**: Adjust page layout and font sizes
 - **No Configuration Files**: All settings are passed directly from the GUI to the processing engine
+
+## Additional Documentation
+
+- **[User Guide](docs/USER_GUIDE.md)**: Comprehensive step-by-step guide for all features
+- **[Pattern Mapping Guide](docs/PATTERN_MAPPING_USER_GUIDE.md)**: Detailed guide for pattern-based file mapping with examples
 
 ## Troubleshooting
 
@@ -212,10 +270,16 @@ All application settings are configured through the GUI interface:
    - Check if the output directory is writable
 
 3. **Section Mapping Issues**
-   - Verify Excel file format
-   - Check section numbers match ICH categories
+   - For Excel import: Ensure columns are named `section_number` and `section_label`
+   - For pattern rules: Use "Test Pattern" to verify your regex/wildcard patterns
+   - Check section numbers match ICH categories (for ICH mode)
    - Ensure filenames match exactly
-   - Validate Excel file column names
+
+4. **Pattern Matching Issues**
+   - Use "Preview" in Quick Pattern dialog to test patterns before applying
+   - Regex mode is case-insensitive by default
+   - Common patterns: `^f.*` (starts with f), `.*01.*` (contains 01), `.*_ae$` (ends with _ae)
+   - See Pattern Mapping Guide for more examples
 
 ## Contributing
 
