@@ -505,6 +505,8 @@ Features:
             logging.info(f"File '{filename}' ignore status: {mapping.ignore}")
             self.refresh_file_mapping_row(item, mapping)
             self.update_files_summary()
+            # Force UI update to prevent click timing issues
+            self.files_tree.update_idletasks()
 
     def edit_file_section(self, item, x, y):
         """Show dropdown to edit file section."""
