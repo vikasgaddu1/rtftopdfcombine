@@ -1167,8 +1167,9 @@ Features:
 
     def on_input_folder_change(self, *args):
         """Handle input folder change."""
-        if self.sort_mode.get() in ["ich", "custom"]:
-            self.scan_rtf_files()
+        # Scan RTF files for all modes (default, ich, custom)
+        # Default mode needs files for ignore functionality
+        self.scan_rtf_files()
 
     def scan_rtf_files(self):
         """Scan input folder for RTF files and update session state."""
