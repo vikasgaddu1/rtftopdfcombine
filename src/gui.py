@@ -393,6 +393,15 @@ Features:
 
     def create_file_mapping_tab(self):
         """Create the file mapping interface."""
+        # Instructions
+        instructions = ttk.Label(
+            self.file_mapping_frame,
+            text="💡 Double-click Section to assign | Click Ignore checkbox to toggle",
+            font=('TkDefaultFont', 9, 'italic'),
+            foreground='#666'
+        )
+        instructions.pack(fill=tk.X, padx=10, pady=(5, 0))
+
         # Table frame with scrollbars
         table_frame = ttk.Frame(self.file_mapping_frame)
         table_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=5)
@@ -403,12 +412,12 @@ Features:
 
         self.files_tree.heading("filename", text="File Name")
         self.files_tree.heading("section", text="Section Number")
-        self.files_tree.heading("ignore", text="Ignore")
+        self.files_tree.heading("ignore", text="Ignore?")
         self.files_tree.heading("status", text="Status")
 
         self.files_tree.column("filename", width=200)
         self.files_tree.column("section", width=300)
-        self.files_tree.column("ignore", width=80)
+        self.files_tree.column("ignore", width=80, anchor='center')
         self.files_tree.column("status", width=120)
 
         # Scrollbars
@@ -500,8 +509,14 @@ Features:
         for section in self.session_state.section_definitions:
             section_values.append(f"{section.section_number} - {section.section_label}")
 
-        # Create popup combobox
-        combo = ttk.Combobox(self.files_tree, values=section_values, state="readonly")
+        # Create popup combobox with larger size and better font
+        combo = ttk.Combobox(
+            self.files_tree,
+            values=section_values,
+            state="readonly",
+            font=('TkDefaultFont', 10),
+            width=50
+        )
 
         # Set current value
         if current_section and current_section != "Not Mapped":
@@ -509,9 +524,12 @@ Features:
         else:
             combo.set("Select...")
 
-        # Position the combobox
-        combo.place(x=bbox[0], y=bbox[1], width=bbox[2], height=bbox[3])
+        # Position the combobox (make it wider than the column for better visibility)
+        combo.place(x=bbox[0], y=bbox[1], width=min(400, bbox[2] + 100), height=bbox[3])
         combo.focus()
+
+        # Automatically show the dropdown
+        combo.event_generate('<Button-1>')
 
         def on_select(event):
             selected = combo.get()
@@ -531,6 +549,7 @@ Features:
         combo.bind("<<ComboboxSelected>>", on_select)
         combo.bind("<FocusOut>", on_focusout)
         combo.bind("<Escape>", lambda e: combo.destroy())
+        combo.bind("<Return>", on_select)
 
     def refresh_file_mapping_row(self, item, mapping):
         """Refresh a single row in the file mapping table."""
@@ -596,8 +615,8 @@ Features:
                 "ignored": "🚫 Ignored"
             }.get(mapping.status, mapping.status)
 
-            # Get ignore display
-            ignore_display = "✓" if mapping.ignore else ""
+            # Get ignore display with clearer checkbox symbols
+            ignore_display = "☑" if mapping.ignore else "☐"
 
             # Insert row
             item = self.files_tree.insert("", tk.END, values=(
