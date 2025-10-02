@@ -56,6 +56,13 @@ class PatternQuickDialog:
         pattern_frame = ttk.LabelFrame(main_frame, text="Pattern", padding="10")
         pattern_frame.pack(fill=tk.X, pady=(0, 10))
 
+        # Help text
+        help_label = ttk.Label(pattern_frame,
+                              text="💡 Tip: Edit the pattern below to match your files (e.g., change ^f.* to ^fslb.*)",
+                              font=('TkDefaultFont', 8, 'italic'),
+                              foreground='#666')
+        help_label.pack(anchor=tk.W, pady=(0, 5))
+
         # Pattern input
         pattern_input_frame = ttk.Frame(pattern_frame)
         pattern_input_frame.pack(fill=tk.X, pady=(0, 5))
