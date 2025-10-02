@@ -447,6 +447,7 @@ Features:
         self.filter_filename = tk.StringVar()
         self.filter_section = tk.StringVar()
         self.filter_status = tk.StringVar()
+        self.filter_use_regex = tk.BooleanVar(value=False)
 
         # Filter entries with labels
         ttk.Label(filter_frame, text="Filter:", font=('TkDefaultFont', 9, 'bold')).grid(row=0, column=0, padx=5, pady=2, sticky=tk.W)
@@ -455,9 +456,11 @@ Features:
         filename_filter = ttk.Entry(filter_frame, textvariable=self.filter_filename, width=20)
         filename_filter.grid(row=0, column=2, padx=5, pady=2, sticky=tk.W)
 
-        ttk.Label(filter_frame, text="Section:").grid(row=0, column=3, padx=5, pady=2, sticky=tk.W)
-        section_filter = ttk.Entry(filter_frame, textvariable=self.filter_section, width=25)
-        section_filter.grid(row=0, column=4, padx=5, pady=2, sticky=tk.W)
+        # Section filter (will be shown/hidden based on mode)
+        self.section_filter_label = ttk.Label(filter_frame, text="Section:")
+        self.section_filter_label.grid(row=0, column=3, padx=5, pady=2, sticky=tk.W)
+        self.section_filter_entry = ttk.Entry(filter_frame, textvariable=self.filter_section, width=25)
+        self.section_filter_entry.grid(row=0, column=4, padx=5, pady=2, sticky=tk.W)
 
         ttk.Label(filter_frame, text="Status:").grid(row=0, column=5, padx=5, pady=2, sticky=tk.W)
         status_filter = ttk.Combobox(filter_frame, textvariable=self.filter_status, width=15, state='readonly')
@@ -465,8 +468,13 @@ Features:
         status_filter.current(0)
         status_filter.grid(row=0, column=6, padx=5, pady=2, sticky=tk.W)
 
+        # Regex checkbox
+        regex_checkbox = ttk.Checkbutton(filter_frame, text="Use Regex", variable=self.filter_use_regex,
+                                         command=self.apply_file_filters)
+        regex_checkbox.grid(row=0, column=7, padx=5, pady=2)
+
         # Clear filters button
-        ttk.Button(filter_frame, text="Clear Filters", command=self.clear_file_filters).grid(row=0, column=7, padx=5, pady=2)
+        ttk.Button(filter_frame, text="Clear Filters", command=self.clear_file_filters).grid(row=0, column=8, padx=5, pady=2)
 
         # Bind filter changes to refresh display
         self.filter_filename.trace('w', lambda *args: self.apply_file_filters())
@@ -837,9 +845,10 @@ Features:
             return
 
         # Get filter values
-        filename_filter = self.filter_filename.get().lower()
-        section_filter = self.filter_section.get().lower()
+        filename_filter = self.filter_filename.get()
+        section_filter = self.filter_section.get()
         status_filter = self.filter_status.get()
+        use_regex = self.filter_use_regex.get()
 
         mode = self.sort_mode.get()
 
@@ -850,6 +859,25 @@ Features:
         # Track filtered count
         filtered_count = 0
         total_count = len(self.session_state.file_mappings)
+
+        # Compile regex patterns if enabled
+        filename_pattern = None
+        section_pattern = None
+        if use_regex:
+            import re
+            try:
+                if filename_filter:
+                    filename_pattern = re.compile(filename_filter, re.IGNORECASE)
+            except re.error as e:
+                logging.warning(f"Invalid filename regex: {e}")
+                filename_pattern = None
+
+            try:
+                if section_filter:
+                    section_pattern = re.compile(section_filter, re.IGNORECASE)
+            except re.error as e:
+                logging.warning(f"Invalid section regex: {e}")
+                section_pattern = None
 
         # Add files from session state that match filters
         for mapping in self.session_state.file_mappings:
@@ -873,10 +901,22 @@ Features:
                 }.get(mapping.status, mapping.status)
 
             # Apply filters
-            if filename_filter and filename_filter not in mapping.filename.lower():
-                continue
-            if section_filter and section_filter not in section_display.lower():
-                continue
+            if filename_filter:
+                if use_regex and filename_pattern:
+                    if not filename_pattern.search(mapping.filename):
+                        continue
+                else:
+                    if filename_filter.lower() not in mapping.filename.lower():
+                        continue
+
+            if section_filter:
+                if use_regex and section_pattern:
+                    if not section_pattern.search(section_display):
+                        continue
+                else:
+                    if section_filter.lower() not in section_display.lower():
+                        continue
+
             if status_filter != "All":
                 # Map status filter to actual status text
                 status_map = {
@@ -932,9 +972,17 @@ Features:
         if mode == "default":
             # Hide section column in default mode
             self.files_tree["displaycolumns"] = ("filename", "ignore", "status")
+            # Hide section filter widgets
+            if hasattr(self, 'section_filter_label'):
+                self.section_filter_label.grid_remove()
+                self.section_filter_entry.grid_remove()
         else:
             # Show all columns in ICH/Custom mode
             self.files_tree["displaycolumns"] = ("filename", "section", "ignore", "status")
+            # Show section filter widgets
+            if hasattr(self, 'section_filter_label'):
+                self.section_filter_label.grid()
+                self.section_filter_entry.grid()
 
         # Debug: Log number of ignored files before display
         ignored_count = sum(1 for m in self.session_state.file_mappings if m.ignore)
