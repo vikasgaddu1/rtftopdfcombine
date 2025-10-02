@@ -493,15 +493,23 @@ Features:
 
             # Force focus to the tree to ensure responsiveness
             self.files_tree.focus_set()
-            
-            # Ignore column - toggle
-            if column == "#3":
-                # Use after to prevent event conflicts
-                self.root.after(1, lambda: self.toggle_file_ignore(item))
-            # Section column - open dropdown (SINGLE CLICK!) - only in ICH/Custom mode
-            elif column == "#2" and self.sort_mode.get() != "default":
-                # Use after to ensure UI is ready
-                self.root.after(1, lambda: self.edit_file_section(item, event.x, event.y))
+
+            # Column mapping depends on mode
+            mode = self.sort_mode.get()
+
+            if mode == "default":
+                # Default mode: filename(#1), ignore(#2), status(#3)
+                if column == "#2":
+                    # Ignore column in default mode
+                    self.root.after(1, lambda: self.toggle_file_ignore(item))
+            else:
+                # ICH/Custom mode: filename(#1), section(#2), ignore(#3), status(#4)
+                if column == "#3":
+                    # Ignore column in ICH/Custom mode
+                    self.root.after(1, lambda: self.toggle_file_ignore(item))
+                elif column == "#2":
+                    # Section column - open dropdown
+                    self.root.after(1, lambda: self.edit_file_section(item, event.x, event.y))
 
     def on_file_enter_key(self, event):
         """Handle Enter key - edit selected row's section (only in ICH/Custom mode)."""
@@ -1388,8 +1396,9 @@ Features:
                     return
                 self.root.after(0, lambda: self.progress_var.set(value))
 
-            # Pass session state for ICH/Custom modes
-            session_state = self.session_state if config.sort_mode in ["ich", "custom"] else None
+            # Pass session state for all modes (needed for ignore functionality)
+            # Default mode needs it to filter out ignored files
+            session_state = self.session_state
 
             # Run the main process
             result = process_main(

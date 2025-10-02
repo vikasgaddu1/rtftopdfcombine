@@ -122,14 +122,24 @@ def main(config: GUIConfig = None, session_state=None, progress_callback=None, s
             logging.error("No RTF files found in input folder")
             sys.exit(1)
         logging.info(f"   Found {len(titles_df)} RTF files.")
+
+        # Filter out ignored files if session_state is provided
+        if session_state and session_state.file_mappings:
+            original_count = len(titles_df)
+            ignored_files = [m.filename for m in session_state.file_mappings if m.ignore]
+            if ignored_files:
+                titles_df = titles_df[~titles_df['filename_stem'].isin(ignored_files)]
+                logging.info(f"   Filtered out {original_count - len(titles_df)} ignored files")
+                logging.info(f"   Proceeding with {len(titles_df)} files")
+
         if progress_callback:
             progress_callback(2)
-        
+
         # Check for stop signal
         if stop_event and stop_event.is_set():
             logging.info("Process stopped by user")
             return False, conversion_stats
-        
+
         # --- Step 2: Load Section Mapping & Merge with Titles ---
         # Check sort mode from config
         sort_mode = getattr(config, 'sort_mode', 'default')
