@@ -1304,14 +1304,26 @@ Features:
 
     def validate_inputs(self):
         """Validate user inputs before processing."""
-        # Check input folder
-        input_path = Path(self.input_folder.get())
+        # Check input folder is not empty
+        input_folder_str = self.input_folder.get().strip()
+        if not input_folder_str:
+            messagebox.showerror("Error", "Please select an input folder")
+            return False
+
+        # Check input folder exists
+        input_path = Path(input_folder_str)
         if not input_path.exists():
             messagebox.showerror("Error", "Input folder does not exist")
             return False
 
-        # Check output folder
-        output_path = Path(self.output_folder.get())
+        # Check output folder is not empty
+        output_folder_str = self.output_folder.get().strip()
+        if not output_folder_str:
+            messagebox.showerror("Error", "Please select an output folder")
+            return False
+
+        # Check/create output folder
+        output_path = Path(output_folder_str)
         if not output_path.exists():
             try:
                 output_path.mkdir(parents=True)
