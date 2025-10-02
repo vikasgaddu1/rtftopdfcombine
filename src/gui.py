@@ -50,6 +50,10 @@ class RTF2PDFGUI:
         self.warning_color = "#ffc107"
         self.danger_color = "#dc3545"
         self.root.configure(bg=self.bg_color)
+        
+        # Track keyboard shortcuts state
+        self.shortcuts_enabled = True
+        self.menu_state_cache = {}
 
         # Configure ttk styles
         self.setup_styles()
@@ -157,13 +161,18 @@ class RTF2PDFGUI:
     def setup_keyboard_shortcuts(self):
         """Setup keyboard shortcuts for common actions."""
         # Global shortcuts
-        self.root.bind('<Control-o>', lambda e: self.browse_input())
-        self.root.bind('<Control-s>', lambda e: self.export_config())
-        self.root.bind('<Control-i>', lambda e: self.import_config())
-        self.root.bind('<F5>', lambda e: self.start_processing())
-        self.root.bind('<Escape>', lambda e: self.stop_processing())
-        self.root.bind('<F1>', lambda e: self.show_help())
-        self.root.bind('<F11>', lambda e: self.maximize_window())
+        self.root.bind('<Control-o>', lambda e: self.handle_shortcut(self.browse_input) if self.shortcuts_enabled else None)
+        self.root.bind('<Control-s>', lambda e: self.handle_shortcut(self.export_config) if self.shortcuts_enabled else None)
+        self.root.bind('<Control-i>', lambda e: self.handle_shortcut(self.import_config) if self.shortcuts_enabled else None)
+        self.root.bind('<F5>', lambda e: self.handle_shortcut(self.start_processing) if self.shortcuts_enabled else None)
+        self.root.bind('<Escape>', lambda e: self.stop_processing() if self.is_processing else (self.handle_shortcut(lambda: None) if self.shortcuts_enabled else None))
+        self.root.bind('<F1>', lambda e: self.handle_shortcut(self.show_help) if self.shortcuts_enabled else None)
+        self.root.bind('<F11>', lambda e: self.handle_shortcut(self.maximize_window) if self.shortcuts_enabled else None)
+        
+    def handle_shortcut(self, func):
+        """Handle keyboard shortcut execution."""
+        if self.shortcuts_enabled and not self.is_processing:
+            func()
 
     def show_help(self):
         """Show help dialog with keyboard shortcuts."""
@@ -194,30 +203,30 @@ Configuration Tab:
 
     def create_menu_bar(self):
         """Create menu bar with window controls."""
-        menubar = tk.Menu(self.root)
-        self.root.config(menu=menubar)
+        self.menubar = tk.Menu(self.root)
+        self.root.config(menu=self.menubar)
 
         # File menu
-        file_menu = tk.Menu(menubar, tearoff=0)
-        menubar.add_cascade(label="File", menu=file_menu)
-        file_menu.add_command(label="Browse Input Folder", command=self.browse_input, accelerator="Ctrl+O")
-        file_menu.add_command(label="Import Config", command=self.import_config, accelerator="Ctrl+I")
-        file_menu.add_command(label="Export Config", command=self.export_config, accelerator="Ctrl+S")
-        file_menu.add_separator()
-        file_menu.add_command(label="Exit", command=self.on_closing)
+        self.file_menu = tk.Menu(self.menubar, tearoff=0)
+        self.menubar.add_cascade(label="File", menu=self.file_menu)
+        self.file_menu.add_command(label="Browse Input Folder", command=self.browse_input, accelerator="Ctrl+O")
+        self.file_menu.add_command(label="Import Config", command=self.import_config, accelerator="Ctrl+I")
+        self.file_menu.add_command(label="Export Config", command=self.export_config, accelerator="Ctrl+S")
+        self.file_menu.add_separator()
+        self.file_menu.add_command(label="Exit", command=self.on_closing)
 
         # Window menu
-        window_menu = tk.Menu(menubar, tearoff=0)
-        menubar.add_cascade(label="Window", menu=window_menu)
-        window_menu.add_command(label="Maximize", command=self.maximize_window, accelerator="F11")
-        window_menu.add_command(label="Restore", command=self.restore_window)
+        self.window_menu = tk.Menu(self.menubar, tearoff=0)
+        self.menubar.add_cascade(label="Window", menu=self.window_menu)
+        self.window_menu.add_command(label="Maximize", command=self.maximize_window, accelerator="F11")
+        self.window_menu.add_command(label="Restore", command=self.restore_window)
 
         # Help menu
-        help_menu = tk.Menu(menubar, tearoff=0)
-        menubar.add_cascade(label="Help", menu=help_menu)
-        help_menu.add_command(label="Keyboard Shortcuts", command=self.show_help, accelerator="F1")
-        help_menu.add_separator()
-        help_menu.add_command(label="About", command=self.show_about)
+        self.help_menu = tk.Menu(self.menubar, tearoff=0)
+        self.menubar.add_cascade(label="Help", menu=self.help_menu)
+        self.help_menu.add_command(label="Keyboard Shortcuts", command=self.show_help, accelerator="F1")
+        self.help_menu.add_separator()
+        self.help_menu.add_command(label="About", command=self.show_about)
 
     def show_about(self):
         """Show about dialog."""
@@ -1283,7 +1292,7 @@ Features:
     def setup_logging(self):
         """Configure logging."""
         logging.basicConfig(
-            level=logging.INFO,
+            level=logging.DEBUG if __name__ == "__main__" else logging.INFO,
             format="%(asctime)s - %(levelname)s - %(message)s"
         )
 
@@ -1355,60 +1364,183 @@ Features:
 
     def lock_ui(self):
         """Lock UI controls during processing to prevent changes."""
-        # Disable input/output controls
-        for widget in self.root.winfo_children():
-            self._disable_widget_recursive(widget)
+        try:
+            logging.info("=== LOCKING UI FOR PROCESSING ===")
+            
+            # Disable keyboard shortcuts except Escape for stop
+            self.shortcuts_enabled = False
+            logging.debug("Keyboard shortcuts disabled")
+            
+            # Change cursor to indicate processing
+            self.root.configure(cursor="wait")
+            logging.debug("Cursor changed to 'wait'")
+            
+            # Update window title to indicate processing
+            self.root.title("RTF to PDF Converter with TOC - [PROCESSING...]")
+            
+            # Disable all menus
+            self._disable_menus()
+            logging.debug("Menus disabled")
+            
+            # Disable all widgets recursively
+            widget_count = 0
+            for widget in self.root.winfo_children():
+                self._disable_widget_recursive(widget)
+                widget_count += 1
+            logging.debug(f"Disabled {widget_count} root-level widgets")
 
-        # Keep stop button enabled
-        self.stop_btn.configure(state='normal')
+            # Keep stop button enabled (must be after recursive disable)
+            self.stop_btn.configure(state='normal')
+            logging.debug("Stop button kept enabled")
+            
+            # Force UI update WITHOUT blocking
+            self.root.update_idletasks()
+            
+            logging.info("=== UI LOCKED SUCCESSFULLY ===")
+        except Exception as e:
+            logging.error(f"Error locking UI: {e}")
+            # Even if there's an error, ensure stop button works
+            try:
+                self.stop_btn.configure(state='normal')
+            except:
+                pass
 
     def unlock_ui(self):
         """Unlock UI controls after processing."""
+        logging.info("=== UNLOCKING UI AFTER PROCESSING ===")
+        
+        # Restore normal cursor
+        self.root.configure(cursor="")
+        logging.debug("Cursor restored to normal")
+        
+        # Re-enable keyboard shortcuts
+        self.shortcuts_enabled = True
+        logging.debug("Keyboard shortcuts enabled")
+        
+        # Re-enable menus
+        self._enable_menus()
+        logging.debug("Menus enabled")
+        
+        # Re-enable all widgets
+        widget_count = 0
         for widget in self.root.winfo_children():
             self._enable_widget_recursive(widget)
+            widget_count += 1
+        logging.debug(f"Enabled {widget_count} root-level widgets")
 
         # Reset button states
         self.process_btn.configure(state='normal')
         self.stop_btn.configure(state='disabled')
+        logging.debug("Button states reset")
+        
+        # Restore window title
+        self.root.title("RTF to PDF Converter with TOC")
+        
+        # Force UI update
+        self.root.update_idletasks()
+        logging.info("=== UI UNLOCKED SUCCESSFULLY ===")
+
+    def _disable_menus(self):
+        """Disable all menu items during processing."""
+        try:
+            # Store current menu states and disable all except Exit
+            menus = [self.file_menu, self.window_menu, self.help_menu]
+            
+            for menu in menus:
+                if not hasattr(menu, '_menu_states'):
+                    menu._menu_states = {}
+                    
+                # Get the number of menu items
+                last = menu.index("end")
+                if last is not None:
+                    for i in range(last + 1):
+                        try:
+                            # Get the menu item type
+                            item_type = menu.type(i)
+                            if item_type in ['command', 'cascade', 'checkbutton', 'radiobutton']:
+                                # Get current state
+                                current_state = menu.entrycget(i, 'state')
+                                menu._menu_states[i] = current_state
+                                
+                                # Check if it's the Exit command
+                                label = menu.entrycget(i, 'label')
+                                if label != 'Exit':
+                                    menu.entryconfig(i, state='disabled')
+                        except:
+                            pass
+        except Exception as e:
+            logging.debug(f"Could not disable menus: {e}")
+
+    def _enable_menus(self):
+        """Re-enable all menu items after processing."""
+        try:
+            menus = [self.file_menu, self.window_menu, self.help_menu]
+            
+            for menu in menus:
+                if hasattr(menu, '_menu_states'):
+                    for i, state in menu._menu_states.items():
+                        try:
+                            menu.entryconfig(i, state=state)
+                        except:
+                            pass
+                    # Clear stored states
+                    delattr(menu, '_menu_states')
+        except Exception as e:
+            logging.debug(f"Could not enable menus: {e}")
 
     def _disable_widget_recursive(self, widget):
-        """Recursively disable widgets."""
+        """Recursively disable widgets while keeping them visible."""
         try:
             # Skip certain widgets
-            if widget == self.stop_btn or widget == self.log_output:
+            if widget == self.stop_btn or widget == self.log_text:
                 return
 
             widget_type = widget.winfo_class()
 
-            # Disable all interactive widgets
+            # Only disable interactive widgets, not containers
             if widget_type in ('TButton', 'Button'):
-                widget.configure(state='disabled')
+                if widget != self.stop_btn:  # Double-check stop button
+                    widget.configure(state='disabled')
             elif widget_type in ('TEntry', 'Entry'):
-                widget.configure(state='disabled')
+                widget.configure(state='readonly')  # Use readonly instead of disabled to keep visible
             elif widget_type in ('TCombobox', 'Combobox'):
                 widget.configure(state='disabled')
             elif widget_type in ('TSpinbox', 'Spinbox'):
-                widget.configure(state='disabled')
+                widget.configure(state='readonly')  # Use readonly to keep visible
             elif widget_type in ('TRadiobutton', 'Radiobutton'):
                 widget.configure(state='disabled')
             elif widget_type in ('TCheckbutton', 'Checkbutton'):
                 widget.configure(state='disabled')
             elif widget_type == 'TNotebook':
-                # Disable tab switching
-                for tab_id in range(widget.index('end')):
-                    widget.tab(tab_id, state='disabled')
-            elif widget_type == 'Treeview':
-                # Disable tree interactions
-                widget.configure(selectmode='none')
+                # Store current tab for restoration
+                if not hasattr(widget, '_current_tab'):
+                    widget._current_tab = widget.select()
+                # Bind to prevent tab switching instead of disabling tabs
+                widget.bind('<Button-1>', lambda e: "break", add="+")
+            elif widget_type in ('Treeview', 'ttk::treeview'):
+                # Store bindings for later restoration
+                if not hasattr(widget, '_stored_bindings'):
+                    widget._stored_bindings = True
+                    # Override bindings to prevent interaction
+                    widget.bind("<ButtonRelease-1>", lambda e: "break")
+                    widget.bind("<Double-1>", lambda e: "break")
+                    widget.bind("<Return>", lambda e: "break")
+                    widget.bind("<space>", lambda e: "break")
             elif widget_type == 'Text':
-                # Disable text widget (except log output)
-                widget.configure(state='disabled')
+                # Keep log text functional
+                if widget != self.log_text:
+                    widget.configure(state='disabled')
+            # Don't disable frames, labels, or other container/display widgets
+            elif widget_type in ('Frame', 'TFrame', 'Labelframe', 'TLabelframe', 
+                                'Label', 'TLabel', 'Scrollbar', 'TScrollbar'):
+                pass  # Keep these visible and functional
 
             # Recurse to children
             for child in widget.winfo_children():
                 self._disable_widget_recursive(child)
-        except:
-            pass
+                
+        except Exception as e:
+            logging.debug(f"Could not disable widget {widget}: {e}")
 
     def _enable_widget_recursive(self, widget):
         """Recursively enable widgets."""
@@ -1417,7 +1549,9 @@ Features:
 
             # Enable all interactive widgets
             if widget_type in ('TButton', 'Button'):
-                widget.configure(state='normal')
+                # Keep stop button disabled after processing
+                if widget != self.stop_btn:
+                    widget.configure(state='normal')
             elif widget_type in ('TEntry', 'Entry'):
                 widget.configure(state='normal')
             elif widget_type in ('TCombobox', 'Combobox'):
@@ -1429,21 +1563,43 @@ Features:
             elif widget_type in ('TCheckbutton', 'Checkbutton'):
                 widget.configure(state='normal')
             elif widget_type == 'TNotebook':
-                # Enable tab switching
-                for tab_id in range(widget.index('end')):
-                    widget.tab(tab_id, state='normal')
-            elif widget_type == 'Treeview':
-                # Re-enable tree interactions
-                widget.configure(selectmode='browse')
+                # Remove the blocking binding
+                widget.unbind('<Button-1>')
+                # Restore the selected tab if stored
+                if hasattr(widget, '_current_tab'):
+                    try:
+                        widget.select(widget._current_tab)
+                        delattr(widget, '_current_tab')
+                    except:
+                        pass
+            elif widget_type in ('Treeview', 'ttk::treeview'):
+                # Restore tree interactions
+                if hasattr(widget, '_stored_bindings'):
+                    delattr(widget, '_stored_bindings')
+                    # Re-bind original events
+                    if widget == self.files_tree:
+                        widget.bind("<ButtonRelease-1>", self.on_file_click)
+                        widget.bind("<Return>", self.on_file_enter_key)
+                        widget.bind("<space>", self.on_file_space_key)
+                    elif widget == self.sections_tree:
+                        widget.bind("<Double-1>", lambda e: self.edit_section())
             elif widget_type == 'Text':
-                # Re-enable text widget
-                widget.configure(state='normal')
+                # Keep log text disabled, others enabled
+                if widget == self.log_text:
+                    widget.configure(state='disabled')
+                else:
+                    widget.configure(state='normal')
+            # Don't need to enable frames, labels, etc. as they weren't disabled
+            elif widget_type in ('Frame', 'TFrame', 'Labelframe', 'TLabelframe',
+                                'Label', 'TLabel', 'Scrollbar', 'TScrollbar'):
+                pass
 
             # Recurse to children
             for child in widget.winfo_children():
                 self._enable_widget_recursive(child)
-        except:
-            pass
+                
+        except Exception as e:
+            logging.debug(f"Could not enable widget {widget}: {e}")
 
     def start_processing(self):
         """Start the processing operation."""
