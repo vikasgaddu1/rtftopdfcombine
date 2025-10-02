@@ -91,10 +91,16 @@ class SessionState:
             self.sort_mode = mode
             # Clear section definitions when changing mode
             self.section_definitions.clear()
-            # Reset file mappings but keep the files
-            for mapping in self.file_mappings:
-                mapping.section_number = None
-                mapping.ignore = False
+            # Clear file mappings completely when changing mode
+            self.file_mappings.clear()
+
+            # If we have RTF files, recreate the mappings
+            if self.rtf_files:
+                for file_path in self.rtf_files:
+                    filename = file_path.stem
+                    self.file_mappings.append(FileMapping(filename=filename))
+                # Sort mappings by filename for consistency
+                self.file_mappings.sort(key=lambda m: m.filename.lower())
 
     def update_rtf_files(self, files: List[Path]):
         """Update the list of RTF files and sync mappings."""
