@@ -76,6 +76,29 @@ The application supports three sort modes:
    - Session state stored in memory (no file persistence)
    - Export/import configurations as JSON
 
+### Pattern-Based Section Mapping (v3.0)
+
+Available in ICH and Custom modes for efficient bulk file assignment:
+
+- **Quick Pattern Dialog**: Assign multiple files using regex/wildcard patterns
+  - Auto-suggest patterns from selected files
+  - Live preview of matching files
+  - Optional save as permanent rule
+- **Pattern Rules Manager**: Create and manage reusable pattern rules
+  - Priority-based conflict resolution
+  - Regex or wildcard patterns
+  - Pattern templates for common use cases
+- **Batch Operations**: Apply all saved rules at once
+  - Override or preserve existing mappings
+  - Statistics on applied/skipped files
+
+**Key Files:**
+- `src/pattern_rules.py`: Core pattern matching logic
+- `src/pattern_dialogs.py`: UI dialogs for pattern management
+- `docs/PATTERN_MAPPING_USER_GUIDE.md`: Comprehensive user guide
+
+**Example Use Case:** Map 50 files named `fslb01a` through `fslb25b` to Section 14.3.1 using pattern `^fslb.*` in seconds instead of clicking 50 times.
+
 ### Important Dependencies
 
 - **Windows-only**: Requires Microsoft Word for RTF conversion
