@@ -58,30 +58,55 @@ python run_gui.py
    - **Input Folder**: Select the folder containing RTF files
    - **Output Folder**: Choose where to save the generated PDFs
    - **Output Filename**: Name for the final combined PDF
-   - **Section Settings**:
-     - Automatic: Files are organized based on filename prefixes (t, f, l)
-     - Manual: Use an Excel file to define sections
+   - **Sort Mode**: Choose from three organizational modes:
+     - **Default Sort**: Automatic alphabetical organization by prefix (t→Tables, f→Figures, l→Listings)
+     - **ICH Sort**: Organize using ICH E3 clinical study report sections
+     - **Custom Sort**: Define your own custom sections
    - **PDF Options**:
      - Page Width (mm): Default 210 (A4)
      - Margin (mm): Default 15
      - Font Size: Default 8
      - Header Font Size: Default 10
+     - Parallel Workers: Number of simultaneous RTF conversions
 
-3. Click "Process Files" to start the conversion
+3. Click "▶ Process Files" to start the conversion
 
-### File Organization
+### Sort Modes
 
-#### Automatic Section Mode
+#### Default Sort (Alphabetical)
 Files are automatically organized based on their filename prefixes:
 - `t*`: Tables (Section 1)
 - `f*`: Figures (Section 2)
 - `l*`: Listings (Section 3)
 
-#### Manual Section Mode
-Use an Excel file (`filename_section.xlsx`) with the following columns:
-- `filename`: RTF filename (without extension)
-- `section_number`: Section number (e.g., "14.1")
-- `section_label`: Section name (generic, works for both ICH and Custom modes)
+No configuration needed - fully automatic!
+
+#### ICH Sort (ICH E3 Sections)
+Organize files according to ICH E3 clinical study report structure with 15 pre-defined sections:
+- 14.1 Study Demographics
+- 14.2 Drug Exposure
+- 14.3 Efficacy Analysis
+- ...and 12 more ICH E3 sections
+
+Use the **Configuration** tab to:
+- View all ICH sections in the Section Definition tab
+- Assign files to sections in the File Mapping tab
+- Mark files to ignore
+- Import/Export configurations for reuse
+
+#### Custom Sort (User-Defined)
+Create your own section structure for maximum flexibility:
+
+1. Switch to **Custom Sort** mode
+2. Go to the **Configuration** tab
+3. In the **Section Definition** tab:
+   - Click "Add Section" to create custom sections
+   - Define section numbers (e.g., "1.1", "2.3")
+   - Define section labels (e.g., "Introduction", "Results")
+4. In the **File Mapping** tab:
+   - Double-click a file's Section column to assign it
+   - Click the checkbox to ignore files
+5. Save your configuration using "Export Config" for reuse
 
 ### Output
 

@@ -13,13 +13,9 @@ from src.rtf_parser import build_title_dataframe
 
 # Import the processing functions moved to the new module
 from src.data_processing import (
-    load_filename_section_map,
-    load_ich_categories_map,
-    merge_and_validate,
     create_toc_structure,
     convert_all,
-    create_automatic_sections,
-    save_mismatch_report_to_file
+    create_automatic_sections
 )
 # Import the PDF utility functions
 from src.pdf_utils import (
@@ -147,7 +143,7 @@ def main(config: GUIConfig = None, session_state=None, progress_callback=None, s
         sort_mode = getattr(config, 'sort_mode', 'default')
 
         if sort_mode in ["ich", "custom"] and session_state:
-            # New ICH/Custom mode using session state
+            # ICH/Custom mode using session state
             logging.info(f"2. Processing files with {sort_mode.upper()} sort mode...")
             from src.state_converter import session_state_to_dataframe
 
@@ -159,26 +155,8 @@ def main(config: GUIConfig = None, session_state=None, progress_callback=None, s
 
             logging.info(f"   {sort_mode.upper()} mode processing successful.")
 
-        elif config.use_section_file:
-            # Legacy Excel mode (deprecated)
-            logging.info("2. Loading section mapping from Excel file...")
-            section_df = load_filename_section_map(file_section_xlsx)
-            ich_df = load_ich_categories_map(ich_categories_xlsx)
-
-            # Merge and validate
-            final_df, mismatch_df = merge_and_validate(titles_df, section_df, ich_df)
-
-            if final_df.empty:
-                logging.error("No valid files remained after section mapping; aborting.")
-                sys.exit(1)
-
-            # Save mismatch report if there were any mismatches
-            if not mismatch_df.empty:
-                mismatch_report_path = output_folder / "file_mismatch_report.txt"
-                save_mismatch_report_to_file(mismatch_df, mismatch_report_path)
-                logging.warning(f"   Found {len(mismatch_df)} file mismatches. Report saved to: {mismatch_report_path}")
         else:
-            # Default mode - automatic sections based on prefixes
+            # Default mode - automatic sections based on filename prefixes
             logging.info("2. Creating automatic sections based on filename prefixes...")
             final_df = create_automatic_sections(titles_df)
             if final_df.empty:

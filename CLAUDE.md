@@ -54,17 +54,27 @@ The application converts RTF files to PDF and combines them with a table of cont
 - **`src/data_processing.py`**: Data validation, section mapping, TOC structure
 - **`src/pdf_utils.py`**: PDF generation, combination, and bookmark management
 
-### Section Organization Modes
+### Section Organization Modes (v2.0)
 
-1. **Automatic Mode**: Files organized by prefix:
+The application supports three sort modes:
+
+1. **Default Sort**: Automatic organization by filename prefix
    - `t*` → Tables (Section 1)
    - `f*` → Figures (Section 2)
    - `l*` → Listings (Section 3)
+   - No configuration required - fully automatic
 
-2. **Manual Mode**: Uses Excel file (`docs/filename_section.xlsx`) with:
-   - `filename`: RTF filename without extension
-   - `section_number`: Section identifier
-   - `section_label`: Section name (generic, works for both ICH and Custom modes)
+2. **ICH Sort**: ICH E3 clinical study report sections
+   - 15 pre-defined sections from `docs/iche3_categories.xlsx`
+   - Interactive file mapping via GUI Configuration tab
+   - Session state stored in memory (no file persistence)
+   - Export/import configurations as JSON
+
+3. **Custom Sort**: User-defined sections
+   - Users create custom sections via GUI
+   - Interactive file mapping via GUI Configuration tab
+   - Session state stored in memory (no file persistence)
+   - Export/import configurations as JSON
 
 ### Important Dependencies
 

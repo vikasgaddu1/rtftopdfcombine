@@ -26,11 +26,6 @@ class GUIConfig:
     # Sort mode settings
     sort_mode: str = "default"  # "default", "ich", "custom"
 
-    # Section file settings (legacy - will be removed)
-    use_section_file: bool = False
-    section_file_path: Optional[Path] = None
-    section_file_name: Optional[str] = None
-    
     # PDF settings
     page_width_mm: float = 210.0
     margin_mm: float = 15.0
@@ -52,13 +47,7 @@ class GUIConfig:
     def get_ich_categories_path(self) -> Path:
         """Get the full path to the ICH categories file."""
         return self.get_docs_folder() / self.ich_categories
-    
-    def get_section_file_path(self) -> Optional[Path]:
-        """Get the full path to the section file if enabled."""
-        if self.use_section_file and self.section_file_path:
-            return self.section_file_path
-        return None
-    
+
     def get_intermediate_toc_path(self) -> Path:
         """Get the full path to the intermediate TOC file."""
         return self.output_folder / self.intermediate_toc
