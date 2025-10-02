@@ -1,13 +1,8 @@
 {
   "permissions": {
     "allow": [
-      "Bash(python:*)",
-      "Bash(git init:*)",
-      "Bash(git add:*)",
-      "Bash(git commit:*)",
-      "Bash(git checkout:*)",
-      "Bash(git merge:*)",
-      "Bash(Click Ignore checkbox to toggle\"\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")"
+      "Bash(Type to search)",
+      "Bash(Tab to next file\"\n   - Clearer guidance for users\n\nCode Changes:\n- Replaced on_file_single_click + on_file_double_click with single on_file_click\n- Added on_file_enter_key and on_file_space_key handlers\n- Added on_tab handler in dropdown for workflow efficiency\n- Refactored dropdown cleanup to save_and_close() function\n- Better event binding with proper \"break\" returns\n\nBenefits:\n- 50% faster file mapping (single click vs double click)\n- Tab workflow: map 5 files in seconds without mouse\n- Better accessibility with full keyboard support\n- Prevents dropdown confusion with active tracking\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")"
     ],
     "deny": [],
     "ask": []

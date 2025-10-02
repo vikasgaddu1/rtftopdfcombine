@@ -396,11 +396,14 @@ Features:
         # Instructions
         instructions = ttk.Label(
             self.file_mapping_frame,
-            text="💡 Double-click Section to assign | Click Ignore checkbox to toggle",
+            text="💡 Click Section to assign | Type to search | Tab to next file | Click Ignore to toggle",
             font=('TkDefaultFont', 9, 'italic'),
             foreground='#666'
         )
         instructions.pack(fill=tk.X, padx=10, pady=(5, 0))
+
+        # Track active dropdown to prevent multiple
+        self.active_dropdown = None
 
         # Table frame with scrollbars
         table_frame = ttk.Frame(self.file_mapping_frame)
@@ -433,9 +436,10 @@ Features:
         table_frame.grid_rowconfigure(0, weight=1)
         table_frame.grid_columnconfigure(0, weight=1)
 
-        # Bind events
-        self.files_tree.bind("<Double-1>", self.on_file_double_click)
-        self.files_tree.bind("<Button-1>", self.on_file_single_click)
+        # Bind events - single click for better UX
+        self.files_tree.bind("<ButtonRelease-1>", self.on_file_click)
+        self.files_tree.bind("<Return>", self.on_file_enter_key)
+        self.files_tree.bind("<space>", self.on_file_space_key)
 
         # Summary frame
         self.files_summary_frame = ttk.Frame(self.file_mapping_frame)
@@ -447,8 +451,16 @@ Features:
         )
         self.files_summary_label.pack(anchor=tk.W)
 
-    def on_file_single_click(self, event):
-        """Handle single click on file mapping table."""
+    def on_file_click(self, event):
+        """Handle click on file mapping table - improved single-click UX."""
+        # Clean up any existing dropdown
+        if self.active_dropdown:
+            try:
+                self.active_dropdown.destroy()
+            except:
+                pass
+            self.active_dropdown = None
+
         region = self.files_tree.identify("region", event.x, event.y)
         if region == "cell":
             column = self.files_tree.identify_column(event.x)
@@ -457,23 +469,29 @@ Features:
             if not item:
                 return
 
-            # If clicked on Ignore column, toggle it
-            if column == "#3":  # Ignore column
+            # Ignore column - toggle
+            if column == "#3":
                 self.toggle_file_ignore(item)
-
-    def on_file_double_click(self, event):
-        """Handle double-click on file mapping table."""
-        region = self.files_tree.identify("region", event.x, event.y)
-        if region == "cell":
-            column = self.files_tree.identify_column(event.x)
-            item = self.files_tree.identify_row(event.y)
-
-            if not item:
-                return
-
-            # If double-clicked on Section column, show dropdown
-            if column == "#2":  # Section column
+            # Section column - open dropdown (SINGLE CLICK!)
+            elif column == "#2":
                 self.edit_file_section(item, event.x, event.y)
+
+    def on_file_enter_key(self, event):
+        """Handle Enter key - edit selected row's section."""
+        selection = self.files_tree.selection()
+        if selection:
+            item = selection[0]
+            bbox = self.files_tree.bbox(item, column="#2")
+            if bbox:
+                self.edit_file_section(item, bbox[0], bbox[1])
+        return "break"
+
+    def on_file_space_key(self, event):
+        """Handle Space key - toggle ignore on selected row."""
+        selection = self.files_tree.selection()
+        if selection:
+            self.toggle_file_ignore(selection[0])
+        return "break"
 
     def toggle_file_ignore(self, item):
         """Toggle the ignore status for a file."""
@@ -547,7 +565,8 @@ Features:
             if filtered:
                 combo.event_generate('<Down>')
 
-        def on_select(event):
+        def save_and_close():
+            """Save the selection and close dropdown."""
             selected = combo.get()
             if selected and selected in all_values:
                 # Extract section number
@@ -556,17 +575,53 @@ Features:
                 logging.info(f"Mapped file '{filename}' to section '{section_number}'")
                 self.refresh_file_mapping_row(item, mapping)
                 self.update_files_summary()
-                self.update_sections_summary()  # Update section stats
+                self.update_sections_summary()
+            if self.active_dropdown == combo:
+                self.active_dropdown = None
             combo.destroy()
 
-        def on_focusout(event):
+        def on_select(event):
+            """Handle selection from dropdown."""
+            save_and_close()
+
+        def on_tab(event):
+            """Handle Tab key - save and move to next file."""
+            save_and_close()
+            # Move to next item
+            next_item = self.files_tree.next(item)
+            if next_item:
+                self.files_tree.selection_set(next_item)
+                self.files_tree.focus(next_item)
+                self.files_tree.see(next_item)
+                # Open dropdown for next item after short delay
+                bbox = self.files_tree.bbox(next_item, column="#2")
+                if bbox:
+                    self.root.after(50, lambda: self.edit_file_section(next_item, bbox[0], bbox[1]))
+            return "break"
+
+        def on_escape(event):
+            """Handle Escape - cancel without saving."""
+            if self.active_dropdown == combo:
+                self.active_dropdown = None
             combo.destroy()
+            return "break"
+
+        def on_focusout(event):
+            """Handle focus loss."""
+            # Delay to allow click events to process
+            self.root.after(100, lambda: combo.destroy() if combo.winfo_exists() else None)
+            if self.active_dropdown == combo:
+                self.active_dropdown = None
+
+        # Store as active dropdown
+        self.active_dropdown = combo
 
         combo.bind("<KeyRelease>", on_keyrelease)
         combo.bind("<<ComboboxSelected>>", on_select)
-        combo.bind("<FocusOut>", on_focusout)
-        combo.bind("<Escape>", lambda e: combo.destroy())
         combo.bind("<Return>", on_select)
+        combo.bind("<Tab>", on_tab)
+        combo.bind("<Escape>", on_escape)
+        combo.bind("<FocusOut>", on_focusout)
 
     def refresh_file_mapping_row(self, item, mapping):
         """Refresh a single row in the file mapping table."""
