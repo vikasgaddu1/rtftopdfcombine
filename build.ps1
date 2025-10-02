@@ -3,19 +3,21 @@ Write-Host "========================================" -ForegroundColor Cyan
 Write-Host "RTF2PDF Build Script" -ForegroundColor Cyan
 Write-Host "========================================" -ForegroundColor Cyan
 
-# Check if virtual environment exists
-if (-not (Test-Path ".venv")) {
-    Write-Host "ERROR: Virtual environment '.venv' not found!" -ForegroundColor Red
+# Check if virtual environment exists (support both venv and .venv)
+$venvPath = if (Test-Path "venv") { "venv" } elseif (Test-Path ".venv") { ".venv" } else { $null }
+
+if (-not $venvPath) {
+    Write-Host "ERROR: Virtual environment not found!" -ForegroundColor Red
     Write-Host "Please create a virtual environment first:" -ForegroundColor Yellow
-    Write-Host "  python -m venv .venv" -ForegroundColor White
+    Write-Host "  python -m venv venv" -ForegroundColor White
     Read-Host "Press Enter to exit"
     exit 1
 }
 
 # Activate virtual environment
-Write-Host "Activating virtual environment..." -ForegroundColor Yellow
+Write-Host "Activating virtual environment from $venvPath..." -ForegroundColor Yellow
 try {
-    & ".\venv\Scripts\Activate.ps1"
+    & ".\$venvPath\Scripts\Activate.ps1"
     Write-Host "Virtual environment activated successfully" -ForegroundColor Green
 } catch {
     Write-Host "ERROR: Failed to activate virtual environment" -ForegroundColor Red
