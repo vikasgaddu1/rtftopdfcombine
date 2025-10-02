@@ -9,6 +9,7 @@ a = Analysis(
     binaries=[],
     datas=[
         ('docs', 'docs'),  # Include docs folder if it contains required files
+        ('img', 'img'),  # Include img folder for icons
     ],
     hiddenimports=[
         # GUI modules
@@ -90,5 +91,5 @@ exe = EXE(
     runtime_tmpdir=None,
     console=False,  # No console window for GUI
     disable_windowed_traceback=False,
-    icon=None,  # Add path to .ico file if you have one
+    icon='img/rtf_to_pdf_primary.ico',
 ) 

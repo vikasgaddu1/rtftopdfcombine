@@ -40,6 +40,11 @@ class RTF2PDFGUI:
         self.root = root
         self.root.title("RTF to PDF Converter with TOC")
 
+        # Set application icon
+        icon_path = Path(__file__).parent.parent / "img" / "rtf_to_pdf_primary.ico"
+        if icon_path.exists():
+            self.root.iconbitmap(str(icon_path))
+
         # Start maximized for better visibility
         self.root.state('zoomed')
 
