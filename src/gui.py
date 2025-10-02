@@ -799,6 +799,10 @@ Features:
         for item in self.files_tree.get_children():
             self.files_tree.delete(item)
 
+        # Debug: Log number of ignored files before display
+        ignored_count = sum(1 for m in self.session_state.file_mappings if m.ignore)
+        logging.info(f"refresh_file_mapping_display: Displaying {len(self.session_state.file_mappings)} files, {ignored_count} are ignored")
+
         # Add files from session state
         for mapping in self.session_state.file_mappings:
             # Get section label

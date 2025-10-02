@@ -104,24 +104,29 @@ class SessionState:
                 self.file_mappings.sort(key=lambda m: m.filename.lower())
 
     def update_rtf_files(self, files: List[Path]):
-        """Update the list of RTF files and sync mappings."""
+        """Update the list of RTF files and sync mappings.
+
+        Preserves existing mapping properties (section_number, ignore status)
+        when files are re-scanned.
+        """
         self.rtf_files = files
 
-        # Create a set of existing filenames
-        existing_filenames = {m.filename for m in self.file_mappings}
+        # Create a dict of existing mappings by filename
+        existing_mappings = {m.filename: m for m in self.file_mappings}
 
-        # Add new files
+        # Build new list preserving existing mappings
+        new_file_mappings = []
         for file_path in files:
             filename = file_path.stem  # Get filename without extension
-            if filename not in existing_filenames:
-                self.file_mappings.append(FileMapping(filename=filename))
+            if filename in existing_mappings:
+                # Preserve existing mapping (keeps section_number and ignore status)
+                new_file_mappings.append(existing_mappings[filename])
+            else:
+                # Create new mapping for new file
+                new_file_mappings.append(FileMapping(filename=filename))
 
-        # Remove mappings for files that no longer exist
-        current_filenames = {f.stem for f in files}
-        self.file_mappings = [
-            m for m in self.file_mappings
-            if m.filename in current_filenames
-        ]
+        # Replace file_mappings with the new list
+        self.file_mappings = new_file_mappings
 
         # Sort mappings by filename for consistency
         self.file_mappings.sort(key=lambda m: m.filename.lower())
@@ -299,9 +304,8 @@ class SessionState:
                     existing_mapping.section_number = imported_mapping.section_number
                     existing_mapping.ignore = imported_mapping.ignore
                     matched_count += 1
-                    # Debug logging
-                    if imported_mapping.ignore:
-                        logging.info(f"Restored ignore status for file: {imported_mapping.filename}")
+                    # Debug logging for all files to verify ignore status
+                    logging.info(f"Restored mapping for {imported_mapping.filename}: section={imported_mapping.section_number}, ignore={imported_mapping.ignore}")
 
         # Calculate summary
         summary = {
