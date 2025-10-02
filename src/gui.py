@@ -298,6 +298,23 @@ Features:
                        variable=self.sort_mode, value="custom",
                        command=self.on_sort_mode_change).pack(anchor=tk.W, pady=2)
 
+        # Configuration Import/Export
+        config_frame = ttk.LabelFrame(main_frame, text="Configuration Management", padding="5")
+        config_frame.pack(fill=tk.X, pady=5)
+
+        config_button_frame = ttk.Frame(config_frame)
+        config_button_frame.pack(pady=5)
+
+        ttk.Button(config_button_frame, text="📥 Import Configuration (Ctrl+I)",
+                  command=self.import_configuration).pack(side=tk.LEFT, padx=5)
+        ttk.Button(config_button_frame, text="📤 Export Configuration (Ctrl+S)",
+                  command=self.export_configuration).pack(side=tk.LEFT, padx=5)
+
+        ttk.Label(config_frame,
+                 text="💡 Save/load your section definitions, file mappings, and pattern rules",
+                 font=('TkDefaultFont', 8, 'italic'),
+                 foreground='#666').pack(pady=(0, 5))
+
         # PDF Options
         pdf_frame = ttk.LabelFrame(main_frame, text="PDF Options", padding="5")
         pdf_frame.pack(fill=tk.X, pady=5)
@@ -452,9 +469,9 @@ Features:
         # Track active dropdown to prevent multiple
         self.active_dropdown = None
 
-        # Filter frame
-        filter_frame = ttk.Frame(self.file_mapping_frame)
-        filter_frame.pack(fill=tk.X, padx=10, pady=5)
+        # Filter and Batch Operations frame
+        filter_batch_frame = ttk.Frame(self.file_mapping_frame)
+        filter_batch_frame.pack(fill=tk.X, padx=10, pady=5)
 
         # Filter variables
         self.filter_filename = tk.StringVar()
@@ -462,32 +479,36 @@ Features:
         self.filter_status = tk.StringVar()
         self.filter_use_regex = tk.BooleanVar(value=False)
 
-        # Filter entries with labels
-        ttk.Label(filter_frame, text="Filter:", font=('TkDefaultFont', 9, 'bold')).grid(row=0, column=0, padx=5, pady=2, sticky=tk.W)
+        # Left side: Filter controls
+        filter_left = ttk.Frame(filter_batch_frame)
+        filter_left.pack(side=tk.LEFT, fill=tk.X, expand=True)
 
-        ttk.Label(filter_frame, text="File Name:").grid(row=0, column=1, padx=5, pady=2, sticky=tk.W)
-        filename_filter = ttk.Entry(filter_frame, textvariable=self.filter_filename, width=20)
+        # Filter entries with labels
+        ttk.Label(filter_left, text="Filter:", font=('TkDefaultFont', 9, 'bold')).grid(row=0, column=0, padx=5, pady=2, sticky=tk.W)
+
+        ttk.Label(filter_left, text="File Name:").grid(row=0, column=1, padx=5, pady=2, sticky=tk.W)
+        filename_filter = ttk.Entry(filter_left, textvariable=self.filter_filename, width=20)
         filename_filter.grid(row=0, column=2, padx=5, pady=2, sticky=tk.W)
 
         # Section filter (will be shown/hidden based on mode)
-        self.section_filter_label = ttk.Label(filter_frame, text="Section:")
+        self.section_filter_label = ttk.Label(filter_left, text="Section:")
         self.section_filter_label.grid(row=0, column=3, padx=5, pady=2, sticky=tk.W)
-        self.section_filter_entry = ttk.Entry(filter_frame, textvariable=self.filter_section, width=25)
+        self.section_filter_entry = ttk.Entry(filter_left, textvariable=self.filter_section, width=25)
         self.section_filter_entry.grid(row=0, column=4, padx=5, pady=2, sticky=tk.W)
 
-        ttk.Label(filter_frame, text="Status:").grid(row=0, column=5, padx=5, pady=2, sticky=tk.W)
-        status_filter = ttk.Combobox(filter_frame, textvariable=self.filter_status, width=15, state='readonly')
+        ttk.Label(filter_left, text="Status:").grid(row=0, column=5, padx=5, pady=2, sticky=tk.W)
+        status_filter = ttk.Combobox(filter_left, textvariable=self.filter_status, width=15, state='readonly')
         status_filter['values'] = ["All", "Mapped", "Not Mapped", "Ignored", "Ready"]
         status_filter.current(0)
         status_filter.grid(row=0, column=6, padx=5, pady=2, sticky=tk.W)
 
         # Regex checkbox
-        regex_checkbox = ttk.Checkbutton(filter_frame, text="Use Regex", variable=self.filter_use_regex,
+        regex_checkbox = ttk.Checkbutton(filter_left, text="Use Regex", variable=self.filter_use_regex,
                                          command=self.apply_file_filters)
         regex_checkbox.grid(row=0, column=7, padx=5, pady=2)
 
         # Clear filters button
-        ttk.Button(filter_frame, text="Clear Filters", command=self.clear_file_filters).grid(row=0, column=8, padx=5, pady=2)
+        ttk.Button(filter_left, text="Clear Filters", command=self.clear_file_filters).grid(row=0, column=8, padx=5, pady=2)
 
         # Bind filter changes to refresh display
         self.filter_filename.trace('w', lambda *args: self.apply_file_filters())
@@ -498,6 +519,22 @@ Features:
         if self.sort_mode.get() == "default":
             self.section_filter_label.grid_remove()
             self.section_filter_entry.grid_remove()
+
+        # Visual separator
+        ttk.Separator(filter_batch_frame, orient='vertical').pack(side=tk.LEFT, fill=tk.Y, padx=15)
+
+        # Right side: Batch Operations
+        batch_right = ttk.Frame(filter_batch_frame)
+        batch_right.pack(side=tk.LEFT)
+
+        ttk.Label(batch_right, text="Batch Operations:", font=('TkDefaultFont', 9, 'bold')).pack(side=tk.LEFT, padx=(0, 10))
+
+        ttk.Button(batch_right, text="⚡ Quick Pattern",
+                  command=self.open_quick_pattern_dialog).pack(side=tk.LEFT, padx=(0, 5))
+        ttk.Button(batch_right, text="📋 Manage Rules",
+                  command=self.open_pattern_rules_dialog).pack(side=tk.LEFT, padx=(0, 5))
+        ttk.Button(batch_right, text="▶ Apply All Rules",
+                  command=self.apply_all_pattern_rules).pack(side=tk.LEFT, padx=(0, 5))
 
         # Table frame with scrollbars
         table_frame = ttk.Frame(self.file_mapping_frame)
@@ -534,19 +571,6 @@ Features:
         self.files_tree.bind("<ButtonRelease-1>", self.on_file_click)
         self.files_tree.bind("<Return>", self.on_file_enter_key)
         self.files_tree.bind("<space>", self.on_file_space_key)
-
-        # Toolbar for batch operations
-        toolbar_frame = ttk.Frame(self.file_mapping_frame)
-        toolbar_frame.pack(fill=tk.X, padx=10, pady=5)
-
-        ttk.Label(toolbar_frame, text="Batch Operations:", font=('TkDefaultFont', 9, 'bold')).pack(side=tk.LEFT, padx=(0, 10))
-
-        ttk.Button(toolbar_frame, text="⚡ Quick Pattern",
-                  command=self.open_quick_pattern_dialog).pack(side=tk.LEFT, padx=(0, 5))
-        ttk.Button(toolbar_frame, text="📋 Manage Rules",
-                  command=self.open_pattern_rules_dialog).pack(side=tk.LEFT, padx=(0, 5))
-        ttk.Button(toolbar_frame, text="▶ Apply All Rules",
-                  command=self.apply_all_pattern_rules).pack(side=tk.LEFT, padx=(0, 5))
 
         # Summary frame
         self.files_summary_frame = ttk.Frame(self.file_mapping_frame)
