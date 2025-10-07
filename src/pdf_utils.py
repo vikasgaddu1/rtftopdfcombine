@@ -416,11 +416,32 @@ def combine_pdfs(final_df: pd.DataFrame, output_pdf_folder: Path, output_path: P
         logging.warning("final_df is empty, nothing to combine.")
         return None, None
         
-    # Ensure final_df is sorted by section_number then filename_stem (same as TOC and bookmarks)
+    # Ensure final_df is sorted by section_number, file type (t/f/l), then filename_stem (same as TOC and bookmarks)
     if 'section_number' in final_df.columns and 'filename_stem' in final_df.columns:
         logging.info("Sorting PDFs to match TOC and bookmark order...")
-        final_df = final_df.sort_values(by=['section_number', 'filename_stem'])
-        logging.info(f"Sorted {len(final_df)} files by section_number and filename_stem")
+
+        # Add file type classification for sorting (Tables, Figures, Listings)
+        def classify_file_type(filename_stem):
+            """Classify file by first letter: t=Tables(1), f=Figures(2), l=Listings(3)"""
+            first_char = filename_stem.lower()[0] if filename_stem else 'z'
+            if first_char == 't':
+                return 1  # Tables first
+            elif first_char == 'f':
+                return 2  # Figures second
+            elif first_char == 'l':
+                return 3  # Listings third
+            else:
+                return 4  # Others last
+
+        final_df['file_type_order'] = final_df['filename_stem'].apply(classify_file_type)
+
+        # Sort by section, then file type (t/f/l), then filename alphabetically within type
+        final_df = final_df.sort_values(by=['section_number', 'file_type_order', 'filename_stem'])
+
+        # Remove the temporary sorting column
+        final_df = final_df.drop(columns=['file_type_order'])
+
+        logging.info(f"Sorted {len(final_df)} files by section_number, file_type, and filename_stem")
 
     writer = PdfWriter()
     page_map = {}
