@@ -143,9 +143,20 @@ Import section definitions in bulk from Excel files instead of manual entry:
 - Comprehensive logging throughout the conversion process
 - Graceful degradation when optional libraries unavailable (e.g., PyMuPDF)
 - Validation of Excel mapping files with mismatch reporting
+- **File Lock Detection**: Detects when output PDFs are open in other programs
+  - Prompts user to close file and retry (up to 3 attempts)
+  - Allows saving with different filename if file remains locked
+  - Auto-generates timestamped filename if user cancels
 
 ### GUI Features
 - Real-time progress tracking with percentage and status updates
 - Configurable PDF settings (page size, margins, fonts)
 - Thread-based processing to prevent UI freezing
 - Stop functionality to cancel long-running operations
+
+### PDF File Handling (`src/pdf_utils.py`)
+- **`is_file_locked()`**: Utility to check if a file is locked by another process
+- **`prepend_toc_to_pdf()`**: Merges TOC and content PDFs with smart file lock handling
+  - Detects locked output files before save operation
+  - Shows dialog for user to retry or choose new filename
+  - Prevents permission denied errors during save
