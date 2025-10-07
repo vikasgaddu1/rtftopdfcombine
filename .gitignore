@@ -122,7 +122,7 @@ output/*.pdf
 output/*.txt
 output/*.json
 output/_pdf/
-*_intermediate.json
+output/_temp/
 
 # Prevent any generated files in input folder
 input/*.json

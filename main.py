@@ -301,7 +301,7 @@ def main(config: GUIConfig = None, session_state=None, progress_callback=None, s
         
         # --- Step 8: Combine TOC with Content ---
         logging.info(f"8. Combining TOC with content into final PDF: {final_output_pdf_path.name}")
-        final_pdf_path = prepend_toc_to_pdf(toc_pdf_path, combined_pdf_path, final_output_pdf_path, final_df, page_map)
+        final_pdf_path = prepend_toc_to_pdf(toc_pdf_path, combined_pdf_path, final_output_pdf_path, final_df, page_map, config)
         if not final_pdf_path:
             logging.error("Failed to create final combined PDF; aborting.")
             sys.exit(1)
@@ -312,12 +312,11 @@ def main(config: GUIConfig = None, session_state=None, progress_callback=None, s
         # --- Step 9: Cleanup Intermediate Files ---
         logging.info("9. Cleaning up intermediate files...")
         try:
-            toc_pdf_path.unlink()
-            combined_pdf_path.unlink()
-            # Also clean up the TOC JSON metadata file
-            toc_json_path = toc_pdf_path.with_suffix('.json')
-            if toc_json_path.exists():
-                toc_json_path.unlink()
+            import shutil
+            temp_folder = config.get_temp_folder()
+            if temp_folder.exists():
+                shutil.rmtree(temp_folder)
+                logging.info(f"   Removed temporary folder: {temp_folder}")
             logging.info("   Intermediate files cleaned up.")
         except Exception as e:
             logging.warning(f"   Could not clean up some intermediate files: {e}")

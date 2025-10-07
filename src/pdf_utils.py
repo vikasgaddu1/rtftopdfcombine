@@ -512,11 +512,11 @@ def combine_pdfs(final_df: pd.DataFrame, output_pdf_folder: Path, output_path: P
         writer.close() # Ensure the writer is closed
 
 
-def prepend_toc_to_pdf(toc_pdf_path: Path, content_pdf_path: Path, final_output_path: Path, final_df: pd.DataFrame, page_map: dict[str, int]) -> Path | None:
+def prepend_toc_to_pdf(toc_pdf_path: Path, content_pdf_path: Path, final_output_path: Path, final_df: pd.DataFrame, page_map: dict[str, int], config: GUIConfig = None) -> Path | None:
     """Merges the TOC PDF and the main content PDF using PyMuPDF (fitz).
-    
+
     This uses a simpler approach to avoid incompatibility issues between links.
-    
+
     Args:
         toc_pdf_path: Path to the generated TOC PDF.
         content_pdf_path: Path to the combined content PDF (intermediate).
@@ -524,6 +524,7 @@ def prepend_toc_to_pdf(toc_pdf_path: Path, content_pdf_path: Path, final_output_
         final_df: DataFrame containing the sorted order, 'filepath', and 'title' for bookmarks.
         page_map: Dictionary mapping filepath strings to their 1-based starting page
                   number in the content_pdf (before TOC is prepended).
+        config: GUIConfig instance for accessing temp folder path.
 
     Returns:
         The path to the final PDF if successful, None otherwise.
@@ -554,8 +555,14 @@ def prepend_toc_to_pdf(toc_pdf_path: Path, content_pdf_path: Path, final_output_
         num_content_pages = len(PdfReader(str(content_pdf_path)).pages)
         logging.debug(f"Added content PDF with {num_content_pages} pages")
         
-        # Create temporary merged PDF
-        temp_merged_path = final_output_path.with_name(f"temp_{final_output_path.name}")
+        # Create temporary merged PDF in temp folder
+        if config:
+            temp_folder = config.get_temp_folder()
+            temp_folder.mkdir(parents=True, exist_ok=True)
+            temp_merged_path = temp_folder / f"temp_{final_output_path.name}"
+        else:
+            temp_merged_path = final_output_path.with_name(f"temp_{final_output_path.name}")
+
         with open(temp_merged_path, "wb") as f:
             merger.write(f)
         merger.close()
