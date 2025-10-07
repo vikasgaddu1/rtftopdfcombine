@@ -1017,54 +1017,61 @@ def prepend_toc_to_pdf(toc_pdf_path: Path, content_pdf_path: Path, final_output_
             root = tk.Tk()
             root.withdraw()  # Hide the root window
 
-            # Show message about locked file
-            retry = messagebox.askyesno(
-                "File Locked",
-                f"The output file is currently open in another program:\n\n{final_output_path.name}\n\n"
-                "Please close the file and click 'Yes' to retry, or click 'No' to save with a different name.",
-                icon='warning'
-            )
-
-            if retry:
-                # Wait a moment and check again
-                max_retries = 3
-                for attempt in range(max_retries):
-                    time.sleep(1)
-                    if not is_file_locked(final_output_path):
-                        break
-                    if attempt < max_retries - 1:
-                        retry_again = messagebox.askyesno(
-                            "File Still Locked",
-                            f"The file is still locked. Retry again? (Attempt {attempt + 2}/{max_retries})",
-                            icon='warning'
-                        )
-                        if not retry_again:
-                            retry = False
-                            break
-                else:
-                    # Still locked after retries
-                    retry = False
-
-            if not retry:
-                # Prompt for new filename
-                new_name = simpledialog.askstring(
-                    "Save As",
-                    f"Enter a new filename for the PDF:\n(without extension)",
-                    initialvalue=final_output_path.stem
+            try:
+                # Show message about locked file
+                retry = messagebox.askyesno(
+                    "File Locked",
+                    f"The output file is currently open in another program:\n\n{final_output_path.name}\n\n"
+                    "Please close the file and click 'Yes' to retry, or click 'No' to save with a different name.",
+                    icon='warning'
                 )
 
-                if new_name:
-                    # Create new path with the provided name
-                    final_output_path = final_output_path.parent / f"{new_name}.pdf"
-                    logging.info(f"Saving to new filename: {final_output_path}")
-                else:
-                    # User cancelled - generate timestamped filename
-                    from datetime import datetime
-                    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-                    final_output_path = final_output_path.parent / f"{final_output_path.stem}_{timestamp}.pdf"
-                    logging.info(f"User cancelled - using timestamped filename: {final_output_path}")
+                if retry:
+                    # Wait a moment and check again
+                    max_retries = 3
+                    for attempt in range(max_retries):
+                        time.sleep(1)
+                        if not is_file_locked(final_output_path):
+                            break
+                        if attempt < max_retries - 1:
+                            retry_again = messagebox.askyesno(
+                                "File Still Locked",
+                                f"The file is still locked. Retry again? (Attempt {attempt + 2}/{max_retries})",
+                                icon='warning'
+                            )
+                            if not retry_again:
+                                retry = False
+                                break
+                    else:
+                        # Still locked after retries
+                        retry = False
 
-            root.destroy()
+                if not retry:
+                    # Prompt for new filename
+                    try:
+                        new_name = simpledialog.askstring(
+                            "Save As",
+                            f"Enter a new filename for the PDF:\n(without extension)",
+                            initialvalue=final_output_path.stem,
+                            parent=root
+                        )
+                    except Exception as dialog_err:
+                        logging.error(f"Error showing dialog: {dialog_err}")
+                        new_name = None
+
+                    if new_name:
+                        # Create new path with the provided name
+                        final_output_path = final_output_path.parent / f"{new_name}.pdf"
+                        logging.info(f"Saving to new filename: {final_output_path}")
+                    else:
+                        # User cancelled or error - generate timestamped filename
+                        from datetime import datetime
+                        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                        final_output_path = final_output_path.parent / f"{final_output_path.stem}_{timestamp}.pdf"
+                        logging.info(f"Using timestamped filename: {final_output_path}")
+            finally:
+                # Always destroy root window when done
+                root.destroy()
 
         # Save the PDF
         doc.save(str(final_output_path), garbage=4, deflate=True)
