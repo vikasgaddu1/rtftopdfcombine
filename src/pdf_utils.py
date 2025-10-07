@@ -860,13 +860,22 @@ def prepend_toc_to_pdf(toc_pdf_path: Path, content_pdf_path: Path, final_output_
         
         # Generate bookmarks
         final_bookmarks = []
-        
+
         # Add main title as the first bookmark pointing to TOC page 1
+        # PyMuPDF requires first item to be level 1
         if main_title_line:
             main_title_text = main_title_line['text']
-            # Add as level 1 bookmark (PyMuPDF requires first item to be level 1)
             final_bookmarks.append([1, main_title_text, 1])
             logging.info(f"Added main title as top-level bookmark: '{main_title_text}'")
+        else:
+            # If no main title found, add a default top-level bookmark
+            # Determine title based on mode
+            if is_automatic_mode:
+                default_title = "Table of Contents"
+            else:
+                default_title = "14. TABLES, FIGURES AND GRAPHS REFERRED TO BUT NOT INCLUDED IN THE TEXT"
+            final_bookmarks.append([1, default_title, 1])
+            logging.info(f"Added default top-level bookmark: '{default_title}'")
         
         if not final_df.empty and page_map is not None:
             # Create a dictionary to keep track of TOC sections and their positions
