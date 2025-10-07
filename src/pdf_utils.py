@@ -1010,7 +1010,7 @@ def prepend_toc_to_pdf(toc_pdf_path: Path, content_pdf_path: Path, final_output_
             logging.warning(f"Output file is locked: {final_output_path}")
 
             # Import here to avoid circular dependency
-            from tkinter import simpledialog, messagebox
+            from tkinter import filedialog, messagebox
             import tkinter as tk
 
             # Prompt user for new filename
@@ -1022,7 +1022,7 @@ def prepend_toc_to_pdf(toc_pdf_path: Path, content_pdf_path: Path, final_output_
                 retry = messagebox.askyesno(
                     "File Locked",
                     f"The output file is currently open in another program:\n\n{final_output_path.name}\n\n"
-                    "Please close the file and click 'Yes' to retry, or click 'No' to save with a different name.",
+                    "Please close the file and click 'Yes' to retry, or click 'No' to save with a different name/location.",
                     icon='warning'
                 )
 
@@ -1047,28 +1047,30 @@ def prepend_toc_to_pdf(toc_pdf_path: Path, content_pdf_path: Path, final_output_
                         retry = False
 
                 if not retry:
-                    # Prompt for new filename
+                    # Show "Save As" dialog for new filename and location
                     try:
-                        new_name = simpledialog.askstring(
-                            "Save As",
-                            f"Enter a new filename for the PDF:\n(without extension)",
-                            initialvalue=final_output_path.stem,
-                            parent=root
+                        new_path = filedialog.asksaveasfilename(
+                            parent=root,
+                            title="Save PDF As",
+                            initialdir=str(final_output_path.parent),
+                            initialfile=final_output_path.stem,
+                            defaultextension=".pdf",
+                            filetypes=[("PDF files", "*.pdf"), ("All files", "*.*")]
                         )
                     except Exception as dialog_err:
-                        logging.error(f"Error showing dialog: {dialog_err}")
-                        new_name = None
+                        logging.error(f"Error showing save dialog: {dialog_err}")
+                        new_path = None
 
-                    if new_name:
-                        # Create new path with the provided name
-                        final_output_path = final_output_path.parent / f"{new_name}.pdf"
-                        logging.info(f"Saving to new filename: {final_output_path}")
+                    if new_path:
+                        # User chose a new path
+                        final_output_path = Path(new_path)
+                        logging.info(f"Saving to user-selected path: {final_output_path}")
                     else:
-                        # User cancelled or error - generate timestamped filename
+                        # User cancelled - generate timestamped filename in original location
                         from datetime import datetime
                         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
                         final_output_path = final_output_path.parent / f"{final_output_path.stem}_{timestamp}.pdf"
-                        logging.info(f"Using timestamped filename: {final_output_path}")
+                        logging.info(f"User cancelled - using timestamped filename: {final_output_path}")
             finally:
                 # Always destroy root window when done
                 root.destroy()
