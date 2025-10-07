@@ -314,6 +314,10 @@ def main(config: GUIConfig = None, session_state=None, progress_callback=None, s
         try:
             toc_pdf_path.unlink()
             combined_pdf_path.unlink()
+            # Also clean up the TOC JSON metadata file
+            toc_json_path = toc_pdf_path.with_suffix('.json')
+            if toc_json_path.exists():
+                toc_json_path.unlink()
             logging.info("   Intermediate files cleaned up.")
         except Exception as e:
             logging.warning(f"   Could not clean up some intermediate files: {e}")

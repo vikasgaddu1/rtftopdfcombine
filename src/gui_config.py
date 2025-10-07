@@ -36,9 +36,6 @@ class GUIConfig:
     log_level: str = "INFO"
     log_format: str = "%(asctime)s - %(levelname)s - %(message)s"
 
-    # Debug mode
-    debug_mode: bool = False
-    
     def get_output_pdf_folder(self) -> Path:
         """Get the full path to the PDF output folder."""
         return self.output_folder / self.output_pdf_folder

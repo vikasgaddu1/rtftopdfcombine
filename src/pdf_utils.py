@@ -366,15 +366,15 @@ def generate_toc_pdf(toc_data: pd.DataFrame, page_map: dict[str, int], output_pa
         output_path.parent.mkdir(parents=True, exist_ok=True) # Ensure output dir exists
         pdf.output(str(output_path), "F")
         logging.info(f"Successfully generated TOC PDF: {output_path} with {len(toc_entries)} entries")
-        
-        # Create a metadata file with TOC entries for later link creation (debug mode only)
-        if config and config.debug_mode:
-            toc_info_path = output_path.with_suffix('.json')
-            import json
-            with open(toc_info_path, 'w') as f:
-                json.dump(toc_entries, f)
-            logging.debug(f"Saved TOC entry information to {toc_info_path}")
-        
+
+        # Create a metadata file with TOC entries for hyperlink creation
+        # This is always needed for TOC hyperlinks to work
+        toc_info_path = output_path.with_suffix('.json')
+        import json
+        with open(toc_info_path, 'w') as f:
+            json.dump(toc_entries, f)
+        logging.debug(f"Saved TOC entry information to {toc_info_path}")
+
         # Return the actual page count of the generated TOC
         return output_path, pdf.page_no()
 
