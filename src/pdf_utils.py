@@ -546,6 +546,8 @@ def prepend_toc_to_pdf(toc_pdf_path: Path, content_pdf_path: Path, final_output_
         # Try to load TOC entry information from JSON file
         toc_info_path = toc_pdf_path.with_suffix('.json')
         toc_entries = []
+        main_title_line = None  # Initialize before use
+
         if toc_info_path.exists():
             import json
             try:
@@ -554,7 +556,7 @@ def prepend_toc_to_pdf(toc_pdf_path: Path, content_pdf_path: Path, final_output_
                 logging.debug(f"Loaded {len(toc_entries)} TOC entries from {toc_info_path}")
             except json.JSONDecodeError:
                 logging.error(f"Failed to load TOC entry information from {toc_info_path}")
-        
+
         # If we have TOC entries, create links
         if toc_entries:
             logging.debug(f"Creating {len(toc_entries)} links in the TOC using {mode_name} mode logic...")
@@ -566,10 +568,7 @@ def prepend_toc_to_pdf(toc_pdf_path: Path, content_pdf_path: Path, final_output_
             headers = [e for e in toc_entries if e.get('is_header', False)]
             entries = [e for e in toc_entries if not e.get('is_header', False)]
             logging.info(f"TOC contains {len(headers)} section headers and {len(entries)} document entries")
-            
-            # Initialize variables that will be used later in bookmark generation
-            main_title_line = None
-            
+
             # Create hyperlinks using mode-specific logic
             if is_automatic_mode:
                 # Automatic mode: sections are "1 Tables", "2 Figures", "3 Listings"
@@ -712,11 +711,10 @@ def prepend_toc_to_pdf(toc_pdf_path: Path, content_pdf_path: Path, final_output_
             else:
                 # Manual mode: sections are "14.1 Something", "14.3 Something"
                 logging.info("Using manual mode hyperlink creation logic")
-                
+
                 # Pre-identify all section header lines for robust detection
                 section_header_lines = []
-                main_title_line = None
-                
+
                 # Scan through all pages in TOC
                 for page_idx in range(min(num_toc_pages, 3)):  # Check first 3 pages max
                     page = doc[page_idx]
