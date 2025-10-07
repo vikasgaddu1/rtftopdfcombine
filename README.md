@@ -6,12 +6,14 @@ A Python application that converts RTF files to PDF and combines them into a sin
 
 ### Core Functionality
 - Convert multiple RTF files to PDF
-- Generate table of contents with page numbers
-- Create PDF bookmarks for easy navigation
+- Generate table of contents with page numbers and clickable hyperlinks
+- Create hierarchical PDF bookmarks for easy navigation
 - Modern GUI interface with progress tracking
 - Configurable PDF settings
 - Real-time conversion progress
 - Detailed logging
+- Smart file organization by type (Tables, Figures, Listings)
+- Automatic temporary file cleanup
 
 ### Version 3.0 Features
 - **Three Sort Modes**: Default (automatic), ICH E3, or Custom sections
@@ -84,13 +86,13 @@ python run_gui.py
 
 ### Sort Modes
 
-#### Default Sort (Alphabetical)
+#### Default Sort (Automatic)
 Files are automatically organized based on their filename prefixes:
 - `t*`: Tables (Section 1)
 - `f*`: Figures (Section 2)
 - `l*`: Listings (Section 3)
 
-No configuration needed - fully automatic!
+Within each section, files are sorted alphabetically. No configuration needed - fully automatic!
 
 #### ICH Sort (ICH E3 Sections)
 Organize files according to ICH E3 clinical study report structure with 15 pre-defined sections:
@@ -98,6 +100,11 @@ Organize files according to ICH E3 clinical study report structure with 15 pre-d
 - 14.2 Drug Exposure
 - 14.3 Efficacy Analysis
 - ...and 12 more ICH E3 sections
+
+**Smart Sorting**: Within each section, files are automatically sorted by type:
+1. Tables (t*) - alphabetically
+2. Figures (f*) - alphabetically
+3. Listings (l*) - alphabetically
 
 Use the **Configuration** tab to:
 - View all ICH sections in the Section Definition tab
@@ -125,6 +132,8 @@ Create your own section structure for maximum flexibility:
    - **Batch Operations**: Use "📋 Manage Rules" to create reusable pattern rules
    - Click the checkbox to ignore files
 5. Save your configuration using "📤 Export Configuration" on Main tab for reuse
+
+**Smart Sorting**: Like ICH mode, files within each custom section are automatically sorted by type (Tables → Figures → Listings), then alphabetically within each type.
 
 ### New in Version 3.0
 
@@ -156,9 +165,17 @@ All configurations now include:
 ### Output
 
 The application generates:
-1. Individual PDF files in the `_pdf` subfolder
-2. A combined PDF with table of contents and bookmarks
-3. Log output in the GUI showing conversion progress
+1. Individual PDF files in the `output/_pdf/` subfolder
+2. A combined PDF with:
+   - Clickable table of contents with hyperlinks to each document
+   - Hierarchical bookmarks matching TOC structure
+   - Smart file ordering (Tables → Figures → Listings within each section)
+3. Temporary files in `output/_temp/` (automatically cleaned up after processing)
+4. Log output in the GUI showing conversion progress
+
+**File Locking Handling**: If the output PDF is open in another program, the application will:
+- Prompt you to close the file and retry
+- OR let you choose a different filename/location via a "Save As" dialog
 
 ## Building Executable
 
@@ -222,14 +239,17 @@ rtf2pdfcombine/
 ├── requirements.txt                # Python dependencies
 ├── input/                          # Input RTF files
 ├── output/                         # Generated PDFs
-│   └── _pdf/                      # Individual PDFs
+│   ├── _pdf/                      # Individual converted PDFs
+│   ├── _temp/                     # Temporary files (auto-cleaned)
+│   └── final_document_with_toc.pdf  # Final combined PDF
+├── config/                         # Exported configuration files
 ├── docs/                           # Documentation
 │   ├── USER_GUIDE.md              # Comprehensive user guide
 │   ├── PATTERN_MAPPING_USER_GUIDE.md  # Pattern-based mapping guide
 │   └── iche3_categories.xlsx      # ICH E3 section definitions
 └── src/
     ├── gui.py                     # GUI implementation
-    ├── gui_config.py              # GUI configuration holder
+    ├── gui_config.py              # Configuration holder
     ├── session_state.py           # Session state management
     ├── pattern_rules.py           # Pattern matching logic
     ├── pattern_dialogs.py         # Pattern UI dialogs
@@ -280,6 +300,17 @@ All application settings are configured through the GUI interface:
    - Regex mode is case-insensitive by default
    - Common patterns: `^f.*` (starts with f), `.*01.*` (contains 01), `.*_ae$` (ends with _ae)
    - See Pattern Mapping Guide for more examples
+
+5. **TOC/Bookmark Issues**
+   - Hyperlinks in TOC are clickable - ensure you're clicking on the blue text
+   - Bookmarks appear in the left panel (may need to open bookmarks pane in PDF reader)
+   - Files are sorted by type (Tables/Figures/Listings) within each section automatically
+   - TOC order matches PDF page order and bookmark hierarchy
+
+6. **Output File Locked**
+   - Close the PDF in your PDF reader before running again
+   - Use "Save As" dialog to save to a different location
+   - Check file permissions if save fails
 
 ## Contributing
 
