@@ -259,20 +259,20 @@ PATTERN_TEMPLATES = [
 def create_pattern_from_files(filenames: List[str]) -> Optional[str]:
     """
     Attempt to create a pattern from a list of similar filenames.
-    
+
     Args:
         filenames: List of filenames to analyze
-        
+
     Returns:
         Suggested pattern string or None if no pattern found
     """
     if not filenames:
         return None
-    
+
     if len(filenames) == 1:
         # Single file - return exact match
         return f"^{re.escape(filenames[0])}$"
-    
+
     # Find common prefix
     prefix = ""
     if all(filenames):
@@ -281,7 +281,7 @@ def create_pattern_from_files(filenames: List[str]) -> Optional[str]:
                 prefix += char
             else:
                 break
-    
+
     # Find common suffix
     suffix = ""
     reversed_files = [f[::-1] for f in filenames]
@@ -291,34 +291,18 @@ def create_pattern_from_files(filenames: List[str]) -> Optional[str]:
                 suffix = char + suffix
             else:
                 break
-    
-    # Build pattern
-    if len(prefix) > 2:  # Meaningful prefix
-        if suffix:
+
+    # Build pattern based on what we found
+    if len(prefix) >= 2:  # Meaningful prefix (lowered from 3 to 2)
+        if suffix and len(suffix) >= 2:
             return f"^{re.escape(prefix)}.*{re.escape(suffix)}$"
         else:
+            # Just use prefix - this is the most flexible approach
             return f"^{re.escape(prefix)}.*"
-    elif suffix and len(suffix) > 2:  # Meaningful suffix
+    elif suffix and len(suffix) >= 2:  # Meaningful suffix
         return f".*{re.escape(suffix)}$"
     else:
-        # Try to find common patterns
-        # Check if all files match a simple pattern like prefix+number+suffix
-        import string
-        if all(any(c in string.digits for c in f) for f in filenames):
-            # All files contain numbers
-            # Try to extract the pattern
-            sample = filenames[0]
-            # This is a simplified pattern detection
-            # Could be enhanced with more sophisticated analysis
-            parts = re.split(r'(\d+)', sample)
-            if len(parts) >= 3:
-                pattern_parts = []
-                for i, part in enumerate(parts):
-                    if part.isdigit():
-                        pattern_parts.append(r'\d+')
-                    elif part:
-                        pattern_parts.append(re.escape(part))
-                
-                return '^' + ''.join(pattern_parts) + '$'
-    
-    return None
+        # No common prefix or suffix - try pattern matching as fallback
+        # This will match all selected files exactly
+        escaped_names = [re.escape(f) for f in filenames]
+        return f"^({'|'.join(escaped_names)})$"
