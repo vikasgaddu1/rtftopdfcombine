@@ -968,12 +968,25 @@ def prepend_toc_to_pdf(toc_pdf_path: Path, content_pdf_path: Path, final_output_
             # Second pass - build hierarchical bookmarks
             # Sort the section numbers to match TOC order
             sorted_section_numbers = sorted(section_groups.keys())
-            
+
+            # Helper function to classify file type for sorting
+            def get_file_type_order(filename_stem):
+                """Classify file by first letter: t=Tables(1), f=Figures(2), l=Listings(3)"""
+                first_char = filename_stem.lower()[0] if filename_stem else 'z'
+                if first_char == 't':
+                    return 1  # Tables first
+                elif first_char == 'f':
+                    return 2  # Figures second
+                elif first_char == 'l':
+                    return 3  # Listings third
+                else:
+                    return 4  # Others last
+
             for section_number in sorted_section_numbers:
                 group = section_groups[section_number]
-                
-                # Sort entries by filename to match TOC order
-                group['entries'].sort(key=lambda x: x['filename_stem'])
+
+                # Sort entries by file type (t/f/l), then filename to match TOC order
+                group['entries'].sort(key=lambda x: (get_file_type_order(x['filename_stem']), x['filename_stem']))
                 
                 # Find the TOC page for this section (if available)
                 toc_page = 1  # Default to first page of TOC
