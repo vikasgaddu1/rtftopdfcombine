@@ -124,6 +124,10 @@ output/*.json
 output/_pdf/
 *_intermediate.json
 
+# Prevent any generated files in input folder
+input/*.json
+input/*.pdf
+
 # Test/debug scripts
 test_imports.py
 

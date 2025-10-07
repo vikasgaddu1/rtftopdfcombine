@@ -5,6 +5,8 @@ import pandas as pd
 from fpdf import FPDF
 from pypdf import PdfWriter, PdfReader
 import fitz  # Import PyMuPDF
+import os
+import time
 
 # Import the GUI configuration
 from src.gui_config import GUIConfig
@@ -25,6 +27,28 @@ HEADER_FONT_SIZE = 9  # Reduced from 10pt
 FONT = 'Arial'
 
 # --------------------------------
+
+def is_file_locked(filepath: Path) -> bool:
+    """Check if a file is locked by another process.
+
+    Args:
+        filepath: Path to the file to check
+
+    Returns:
+        True if the file is locked, False otherwise
+    """
+    if not filepath.exists():
+        return False
+
+    try:
+        # Try to open the file in exclusive mode
+        with open(filepath, 'a'):
+            pass
+        return False
+    except PermissionError:
+        return True
+    except Exception:
+        return False
 
 # Placeholder: Needs toc_data to include 'filepath' column corresponding to page_map keys
 def generate_toc_pdf(toc_data: pd.DataFrame, page_map: dict[str, int], output_path: Path, config: GUIConfig = None) -> tuple[Path | None, int | None]:
@@ -343,12 +367,13 @@ def generate_toc_pdf(toc_data: pd.DataFrame, page_map: dict[str, int], output_pa
         pdf.output(str(output_path), "F")
         logging.info(f"Successfully generated TOC PDF: {output_path} with {len(toc_entries)} entries")
         
-        # Create a metadata file with TOC entries for later link creation
-        toc_info_path = output_path.with_suffix('.json')
-        import json
-        with open(toc_info_path, 'w') as f:
-            json.dump(toc_entries, f)
-        logging.debug(f"Saved TOC entry information to {toc_info_path}")
+        # Create a metadata file with TOC entries for later link creation (debug mode only)
+        if config and config.debug_mode:
+            toc_info_path = output_path.with_suffix('.json')
+            import json
+            with open(toc_info_path, 'w') as f:
+                json.dump(toc_entries, f)
+            logging.debug(f"Saved TOC entry information to {toc_info_path}")
         
         # Return the actual page count of the generated TOC
         return output_path, pdf.page_no()
@@ -949,19 +974,82 @@ def prepend_toc_to_pdf(toc_pdf_path: Path, content_pdf_path: Path, final_output_
                 doc.set_toc(final_bookmarks)
                 logging.info(f"Generated {len(final_bookmarks)} hierarchical bookmarks")
         
-        # Save the final PDF
+        # Save the final PDF with locked file handling
         final_output_path.parent.mkdir(parents=True, exist_ok=True)
+
+        # Check if the output file is locked
+        if is_file_locked(final_output_path):
+            logging.warning(f"Output file is locked: {final_output_path}")
+
+            # Import here to avoid circular dependency
+            from tkinter import simpledialog, messagebox
+            import tkinter as tk
+
+            # Prompt user for new filename
+            root = tk.Tk()
+            root.withdraw()  # Hide the root window
+
+            # Show message about locked file
+            retry = messagebox.askyesno(
+                "File Locked",
+                f"The output file is currently open in another program:\n\n{final_output_path.name}\n\n"
+                "Please close the file and click 'Yes' to retry, or click 'No' to save with a different name.",
+                icon='warning'
+            )
+
+            if retry:
+                # Wait a moment and check again
+                max_retries = 3
+                for attempt in range(max_retries):
+                    time.sleep(1)
+                    if not is_file_locked(final_output_path):
+                        break
+                    if attempt < max_retries - 1:
+                        retry_again = messagebox.askyesno(
+                            "File Still Locked",
+                            f"The file is still locked. Retry again? (Attempt {attempt + 2}/{max_retries})",
+                            icon='warning'
+                        )
+                        if not retry_again:
+                            retry = False
+                            break
+                else:
+                    # Still locked after retries
+                    retry = False
+
+            if not retry:
+                # Prompt for new filename
+                new_name = simpledialog.askstring(
+                    "Save As",
+                    f"Enter a new filename for the PDF:\n(without extension)",
+                    initialvalue=final_output_path.stem
+                )
+
+                if new_name:
+                    # Create new path with the provided name
+                    final_output_path = final_output_path.parent / f"{new_name}.pdf"
+                    logging.info(f"Saving to new filename: {final_output_path}")
+                else:
+                    # User cancelled - generate timestamped filename
+                    from datetime import datetime
+                    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                    final_output_path = final_output_path.parent / f"{final_output_path.stem}_{timestamp}.pdf"
+                    logging.info(f"User cancelled - using timestamped filename: {final_output_path}")
+
+            root.destroy()
+
+        # Save the PDF
         doc.save(str(final_output_path), garbage=4, deflate=True)
         doc.close()
-        
+
         # Clean up temp file
         if temp_merged_path.exists():
             temp_merged_path.unlink()
             logging.debug(f"Removed temporary file {temp_merged_path}")
-        
+
         logging.info(f"Successfully created final PDF: {final_output_path}")
         return final_output_path
-    
+
     except Exception as e:
         logging.error(f"Error in prepend_toc_to_pdf: {e}", exc_info=True)
         return None

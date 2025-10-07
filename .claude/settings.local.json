@@ -10,7 +10,14 @@
       "Bash(git checkout:*)",
       "Bash(python test_regex.py:*)",
       "Bash(del test_regex.py)",
-      "Bash(git branch:*)"
+      "Bash(git branch:*)",
+      "Bash(python:*)",
+      "Bash(del test_bulk_import.py)",
+      "Bash(del test_pattern_rules.py)",
+      "Bash(del _toc_intermediate.json)",
+      "Bash(del:*)",
+      "Bash(rm:*)",
+      "Bash(git log:*)"
     ],
     "deny": [],
     "ask": []
